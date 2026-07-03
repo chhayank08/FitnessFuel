@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28'];
@@ -64,61 +63,98 @@ const DietPage: React.FC = () => {
 
   const fetchMLRecommendations = async (userProfile: any) => {
     try {
-      const defaultData = {
-        daily_calories: 2000,
-        protein: 150,
-        carbs: 250,
-        fat: 67,
-        meals: [],
-        meal_analytics: {},
-        goal_insights: {}
-      };
-
       if (!userProfile.weight || !userProfile.height) {
         toast.error('Please update your profile with weight and height information');
-        return defaultData;
+        return { daily_calories: 2000, protein: 150, carbs: 250, fat: 67, meals: [], meal_analytics: {}, goal_insights: {} };
       }
 
-      const response = await axios.post('http://localhost:3000/api/diet/recommend', {
-        weight: parseFloat(userProfile.weight),
-        height: parseFloat(userProfile.height),
-        age: parseInt(userProfile.age || '30'),
-        gender: userProfile.gender || 'male',
-        activity_level: userProfile.activity_level || 'moderate',
-        goal: userProfile.goal || 'maintain',
-        // Meal count will be calculated automatically based on macros
-      });
+      const weight = parseFloat(userProfile.weight);
+      const height = parseFloat(userProfile.height);
+      const age = parseInt(userProfile.age || '30');
+      const gender = userProfile.gender || 'male';
+      const activityLevel = userProfile.activity_level || 'moderate';
+      const goal = userProfile.goal || 'maintain';
 
-      if (!response.data) {
-        throw new Error('No response data received');
-      }
+      // Mifflin-St Jeor BMR
+      const bmr = gender === 'male'
+        ? 10 * weight + 6.25 * height - 5 * age + 5
+        : 10 * weight + 6.25 * height - 5 * age - 161;
 
-      return {
-        daily_calories: response.data.daily_calories || 2000,
-        protein: response.data.protein || 150,
-        carbs: response.data.carbs || 250,
-        fat: response.data.fat || 67,
-        fiber: response.data.fiber || 30,
-        water_ml: response.data.water_ml || 2500,
-        tdee: response.data.tdee || 2000,
-        bmr: response.data.bmr || 1600,
-        bmi: response.data.bmi || 22,
-        meals: Array.isArray(response.data.meals) ? response.data.meals : [],
-        meal_analytics: response.data.meal_analytics || {},
-        goal_insights: response.data.goal_insights || {}
+      const activityMultipliers: Record<string, number> = {
+        sedentary: 1.2, light: 1.375, moderate: 1.55, very: 1.725, extra: 1.9
       };
-    } catch (error: any) {
-      console.error('Error fetching recommendations:', error);
-      toast.error(error.response?.data?.error || 'Failed to fetch diet recommendations');
+      const tdee = Math.round(bmr * (activityMultipliers[activityLevel] || 1.55));
+
+      const goalAdjustments: Record<string, number> = {
+        weight_loss: -500, weight_gain: 300, muscle_gain: 200, maintain: 0
+      };
+      const daily_calories = Math.round(tdee + (goalAdjustments[goal] || 0));
+
+      const protein = Math.round(weight * 2);
+      const fat = Math.round((daily_calories * 0.25) / 9);
+      const carbs = Math.round((daily_calories - protein * 4 - fat * 9) / 4);
+      const bmi = parseFloat((weight / ((height / 100) ** 2)).toFixed(1));
+      const bmiCategory = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese';
+
+      const mealTemplates: Record<string, { name: string; category: string; meal_type: string }[]> = {
+        weight_loss: [
+          { name: 'Greek Yogurt & Berries', category: 'Low Calorie', meal_type: 'breakfast' },
+          { name: 'Grilled Chicken Salad', category: 'High Protein', meal_type: 'lunch' },
+          { name: 'Steamed Fish & Vegetables', category: 'Lean Protein', meal_type: 'dinner' },
+        ],
+        weight_gain: [
+          { name: 'Oatmeal with Banana & Peanut Butter', category: 'High Calorie', meal_type: 'breakfast' },
+          { name: 'Rice, Chicken & Avocado Bowl', category: 'Balanced', meal_type: 'lunch' },
+          { name: 'Pasta with Beef & Cheese', category: 'High Calorie', meal_type: 'dinner' },
+        ],
+        muscle_gain: [
+          { name: 'Eggs & Whole Grain Toast', category: 'High Protein', meal_type: 'breakfast' },
+          { name: 'Tuna & Quinoa Bowl', category: 'High Protein', meal_type: 'lunch' },
+          { name: 'Steak & Sweet Potato', category: 'High Protein', meal_type: 'dinner' },
+        ],
+        maintain: [
+          { name: 'Smoothie Bowl', category: 'Balanced', meal_type: 'breakfast' },
+          { name: 'Turkey Wrap', category: 'Balanced', meal_type: 'lunch' },
+          { name: 'Salmon & Brown Rice', category: 'Balanced', meal_type: 'dinner' },
+        ],
+      };
+
+      const templates = mealTemplates[goal] || mealTemplates.maintain;
+      const mealCalories = [Math.round(daily_calories * 0.3), Math.round(daily_calories * 0.4), Math.round(daily_calories * 0.3)];
+
+      const meals = templates.map((t, i) => ({
+        recipe_id: `meal-${i}`,
+        name: t.name,
+        category: t.category,
+        meal_type: t.meal_type,
+        calories: mealCalories[i],
+        protein: Math.round(protein / 3),
+        carbs: Math.round(carbs / 3),
+        fat: Math.round(fat / 3),
+        rating: 4.5,
+        image_url: '',
+        ingredients: ['See full recipe for details'],
+        instructions: ['Prepare ingredients', 'Cook as desired', 'Serve and enjoy'],
+      }));
+
       return {
-        daily_calories: 2000,
-        protein: 150,
-        carbs: 250,
-        fat: 67,
-        meals: [],
+        daily_calories,
+        protein,
+        carbs,
+        fat,
+        fiber: 30,
+        water_ml: Math.round(weight * 35),
+        tdee,
+        bmr: Math.round(bmr),
+        bmi,
+        meals,
         meal_analytics: {},
-        goal_insights: {}
+        goal_insights: { goal, bmi_category: bmiCategory, weekly_weight_change_estimate: 0 },
       };
+    } catch (error) {
+      console.error('Error generating diet recommendations:', error);
+      toast.error('Failed to generate diet recommendations');
+      return { daily_calories: 2000, protein: 150, carbs: 250, fat: 67, meals: [], meal_analytics: {}, goal_insights: {} };
     }
   };
 

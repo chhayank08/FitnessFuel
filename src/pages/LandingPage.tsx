@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Dumbbell, Utensils, BarChart, Menu, X, Facebook, Instagram, Twitter, Linkedin, Youtube } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -19,15 +19,18 @@ const LandingPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const { user, signOut, signIn, signUp, loading, error } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) navigate('/dashboard', { replace: true });
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (authMode === 'signIn') {
-      await signIn(email, password);
-    } else {
-      await signUp(email, password, fullName);
-    }
+    const success = authMode === 'signIn'
+      ? await signIn(email, password)
+      : await signUp(email, password, fullName);
+    if (success) navigate('/dashboard', { replace: true });
   };
 
   const features = [
@@ -536,6 +539,7 @@ const LandingPage: React.FC = () => {
                     <input
                       id="fullName"
                       type="text"
+                      autoComplete="name"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       className="w-full p-3 bg-dark-400 border border-dark-300 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -551,6 +555,7 @@ const LandingPage: React.FC = () => {
                   <input
                     id="email"
                     type="email"
+                    autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full p-3 bg-dark-400 border border-dark-300 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -565,6 +570,7 @@ const LandingPage: React.FC = () => {
                   <input
                     id="password"
                     type="password"
+                    autoComplete={authMode === 'signIn' ? 'current-password' : 'new-password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full p-3 bg-dark-400 border border-dark-300 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500"

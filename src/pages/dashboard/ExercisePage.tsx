@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Search, Clock, Dumbbell, Calendar } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
-import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
 type Exercise = {

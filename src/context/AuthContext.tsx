@@ -6,8 +6,8 @@ type AuthContextType = {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string) => Promise<boolean>;
+  signIn: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   error: string | null;
 };
@@ -38,48 +38,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string): Promise<boolean> => {
     try {
       setError(null);
       setLoading(true);
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-        },
+        options: { data: { full_name: fullName } },
       });
-      
       if (error) throw error;
+      return true;
     } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError('An unknown error occurred');
-      }
+      setError(error instanceof Error ? error.message : 'An unknown error occurred');
+      return false;
     } finally {
       setLoading(false);
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<boolean> => {
     try {
       setError(null);
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      return true;
     } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError('An unknown error occurred');
-      }
+      setError(error instanceof Error ? error.message : 'An unknown error occurred');
+      return false;
     } finally {
       setLoading(false);
     }
