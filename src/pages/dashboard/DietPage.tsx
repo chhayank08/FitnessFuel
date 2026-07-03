@@ -122,6 +122,25 @@ const DietPage: React.FC = () => {
       const templates = mealTemplates[goal] || mealTemplates.maintain;
       const mealCalories = [Math.round(daily_calories * 0.3), Math.round(daily_calories * 0.4), Math.round(daily_calories * 0.3)];
 
+      const MEAL_IMAGES: Record<string, string> = {
+        // weight_loss
+        'Greek Yogurt & Berries': 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=600&q=80',
+        'Grilled Chicken Salad': 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&q=80',
+        'Steamed Fish & Vegetables': 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600&q=80',
+        // weight_gain
+        'Oatmeal with Banana & Peanut Butter': 'https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=600&q=80',
+        'Rice, Chicken & Avocado Bowl': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80',
+        'Pasta with Beef & Cheese': 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=600&q=80',
+        // muscle_gain
+        'Eggs & Whole Grain Toast': 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600&q=80',
+        'Tuna & Quinoa Bowl': 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600&q=80',
+        'Steak & Sweet Potato': 'https://images.unsplash.com/photo-1558030006-450675393462?w=600&q=80',
+        // maintain
+        'Smoothie Bowl': 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=600&q=80',
+        'Turkey Wrap': 'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=600&q=80',
+        'Salmon & Brown Rice': 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600&q=80',
+      };
+
       const meals = templates.map((t, i) => ({
         recipe_id: `meal-${i}`,
         name: t.name,
@@ -132,7 +151,7 @@ const DietPage: React.FC = () => {
         carbs: Math.round(carbs / 3),
         fat: Math.round(fat / 3),
         rating: 4.5,
-        image_url: '',
+        image_url: MEAL_IMAGES[t.name] || '',
         ingredients: ['See full recipe for details'],
         instructions: ['Prepare ingredients', 'Cook as desired', 'Serve and enjoy'],
       }));
