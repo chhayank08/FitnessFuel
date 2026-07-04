@@ -18,19 +18,30 @@ const LandingPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const { user, signOut, signIn, signUp, signInWithGoogle, loading, error } = useAuth();
+  const { user, signOut, signIn, signUp, loading, error } = useAuth();
   const navigate = useNavigate();
+  const [justLoggedIn, setJustLoggedIn] = useState(false);
 
   useEffect(() => {
-    if (user) navigate('/dashboard', { replace: true });
-  }, [user, navigate]);
+    if (user && justLoggedIn) navigate('/dashboard', { replace: true });
+  }, [user, justLoggedIn, navigate]);
+
+  const signInWithGoogle = async () => {
+    const { supabase } = await import('../lib/supabase');
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/dashboard` },
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const success = authMode === 'signIn'
       ? await signIn(email, password)
       : await signUp(email, password, fullName);
-    if (success) navigate('/dashboard', { replace: true });
+    if (success) {
+      setJustLoggedIn(true);
+    }
   };
 
   const features = [
