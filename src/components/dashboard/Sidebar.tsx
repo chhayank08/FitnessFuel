@@ -1,60 +1,50 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  User, 
-  Utensils, 
-  Dumbbell, 
-  Settings, 
-  BarChart, 
-  Calendar, 
-  LogOut 
-} from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { NAV_ITEMS } from './navItems';
 
 const Sidebar: React.FC = () => {
   const { signOut } = useAuth();
-  
-  const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
-    { name: 'Profile', path: '/dashboard/profile', icon: <User size={20} /> },
-    { name: 'Diet', path: '/dashboard/diet', icon: <Utensils size={20} /> },
-    { name: 'Exercise', path: '/dashboard/exercise', icon: <Dumbbell size={20} /> },
-    { name: 'Progress', path: '/dashboard/progress', icon: <BarChart size={20} /> },
-    { name: 'Schedule', path: '/dashboard/schedule', icon: <Calendar size={20} /> },
-    { name: 'Settings', path: '/dashboard/settings', icon: <Settings size={20} /> },
-  ];
 
   return (
-    <div className="fixed left-0 top-0 h-full bg-dark-500 text-white w-64 flex-shrink-0 hidden md:flex md:flex-col z-30">
-      <nav className="flex-1 mt-24 px-2 overflow-y-auto">
+    <div className="fixed left-0 top-0 z-30 hidden h-full w-64 flex-shrink-0 flex-col border-r border-surface-line bg-surface-1 md:flex">
+      <nav className="mt-24 flex-1 overflow-y-auto px-3">
+        <p className="mb-2 px-4 text-[11px] font-semibold uppercase tracking-widest text-gray-500">Menu</p>
         <div className="space-y-1">
-          {navItems.map((item) => (
+          {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
-              className={({ isActive }) => 
-                `flex items-center px-4 py-3 text-sm font-medium rounded-md transition duration-150 ${
-                  isActive 
-                    ? 'bg-primary-500 text-white' 
-                    : 'text-gray-300 hover:bg-dark-400 hover:text-white'
+              end={item.path === '/dashboard'}
+              className={({ isActive }) =>
+                `group relative flex items-center rounded-xl px-4 py-2.5 text-sm font-medium transition-colors duration-150 ${
+                  isActive
+                    ? 'bg-primary-500/15 text-white'
+                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
                 }`
               }
-              end={item.path === '/dashboard'}
             >
-              <span className="mr-3">{item.icon}</span>
-              {item.name}
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-primary-400 shadow-glow-primary" />
+                  )}
+                  <item.icon size={19} className={`mr-3 ${isActive ? 'text-primary-300' : ''}`} />
+                  {item.name}
+                </>
+              )}
             </NavLink>
           ))}
         </div>
       </nav>
-      
-      <div className="p-4 border-t border-dark-400">
+
+      <div className="border-t border-surface-line p-4">
         <button
           onClick={() => signOut()}
-          className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-300 rounded-md hover:bg-dark-400 hover:text-white transition duration-150"
+          className="flex w-full items-center rounded-xl px-4 py-2.5 text-sm font-medium text-gray-400 transition-colors duration-150 hover:bg-white/5 hover:text-white"
         >
-          <LogOut size={20} className="mr-3" />
+          <LogOut size={19} className="mr-3" />
           Sign Out
         </button>
       </div>

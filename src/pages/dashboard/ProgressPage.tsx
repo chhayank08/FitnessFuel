@@ -1,234 +1,164 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Calendar } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../lib/supabase';
-import ProgressChart from '../../components/dashboard/ProgressChart';
+import React, { useMemo } from 'react';
+import { motion, useReducedMotion, Variants } from 'framer-motion';
+import { Plus, Footprints, HeartPulse, Moon, Percent } from 'lucide-react';
+import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import Skeleton from '../../components/ui/Skeleton';
+import { useDailyLogContext } from '../../context/DailyLogContext';
+import { useHealthMetrics } from '../../hooks/useHealthMetrics';
+import { useWeeklyActivity } from '../../hooks/useWeeklyActivity';
+import { computeHealthScore } from '../../lib/healthScore';
+import HealthScoreCard from '../../components/dashboard/HealthScoreCard';
+import MetricStatCard from '../../components/dashboard/MetricStatCard';
+import WeightTrendChart from '../../components/dashboard/WeightTrendChart';
+import BodyCompChart from '../../components/dashboard/BodyCompChart';
+import ActivityConsistencyChart from '../../components/dashboard/ActivityConsistencyChart';
 
-type ProgressLog = {
-  id: string;
-  created_at: string;
-  weight: number | null;
-  notes: string | null;
-  mood: string | null;
+const container: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
+const item: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 120, damping: 18 } },
 };
 
 const ProgressPage: React.FC = () => {
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [progressLogs, setProgressLogs] = useState<ProgressLog[]>([]);
-  
-  useEffect(() => {
-    if (user) {
-      fetchProgressLogs();
-    }
-  }, [user]);
-  
-  const fetchProgressLogs = async () => {
-    try {
-      setLoading(true);
-      
-      if (!user) return;
-      
-      const { data, error } = await supabase
-        .from('progress_logs')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        throw error;
-      }
-      
-      if (data) {
-        setProgressLogs(data);
-      }
-    } catch (error) {
-      console.error('Error fetching progress logs:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Prepare data for weight chart
-  const weightChartData = {
-    labels: progressLogs
-      .slice()
-      .reverse()
-      .map(log => new Date(log.created_at).toLocaleDateString()),
-    datasets: [
-      {
-        label: 'Weight (lbs)',
-        data: progressLogs
-          .slice()
-          .reverse()
-          .map(log => log.weight || 0),
-        borderColor: '#6C63FF',
-        backgroundColor: 'rgba(108, 99, 255, 0.2)',
-        tension: 0.4,
-        fill: true,
-      },
-    ],
-  };
-  
-  // Mock data for other charts
-  const calorieChartData = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    datasets: [
-      {
-        label: 'Calories Consumed',
-        data: [2100, 2300, 2000, 2400, 2200, 2500, 2300],
-        borderColor: '#FF6584',
-        backgroundColor: 'rgba(255, 101, 132, 0.2)',
-        tension: 0.4,
-        fill: true,
-      },
-      {
-        label: 'Calories Burned',
-        data: [2300, 2400, 2200, 2500, 2400, 2600, 2500],
-        borderColor: '#4CAF50',
-        backgroundColor: 'rgba(76, 175, 80, 0.2)',
-        tension: 0.4,
-        fill: true,
-      },
-    ],
-  };
-  
-  const workoutChartData = {
-    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-    datasets: [
-      {
-        label: 'Workouts Completed',
-        data: [3, 5, 4, 6],
-        borderColor: '#6C63FF',
-        backgroundColor: 'rgba(108, 99, 255, 0.2)',
-        tension: 0.4,
-        fill: true,
-      },
-    ],
-  };
-  
+  const reducedMotion = useReducedMotion();
+  const { dailyLog, weightHistory, streak, insights, quickAdd } = useDailyLogContext();
+  const metrics = useHealthMetrics(90);
+  const activity = useWeeklyActivity(`${dailyLog.completions.length}`);
+
+  const health = useMemo(
+    () =>
+      computeHealthScore({
+        streakDays: streak.current,
+        waterMl: dailyLog.waterMl,
+        waterTargetMl: insights.targets?.waterMl ?? 2500,
+        weeklyDeltaKg: insights.weeklyDeltaKg,
+        goal: insights.nutritionProfile?.goal ?? 'maintain',
+        avgSteps7d: metrics.avgLast('steps', 7),
+        avgSleepMin7d: metrics.avgLast('sleep_minutes', 7),
+        workouts7d: activity.workouts7d,
+      }),
+    [streak, dailyLog.waterMl, insights.targets, insights.weeklyDeltaKg, insights.nutritionProfile, metrics, activity.workouts7d]
+  );
+
+  const loading = weightHistory.loading || metrics.loading;
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-7xl space-y-6">
+        <Skeleton className="h-9 w-64" />
+        <Skeleton className="h-48" />
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-28" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+    <motion.div className="mx-auto max-w-7xl" variants={reducedMotion ? undefined : container} initial="hidden" animate="show">
+      <motion.div variants={item} className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white">Progress Tracking</h1>
-          <p className="text-gray-400 mt-1">Monitor your fitness journey</p>
+          <h1 className="font-display text-3xl font-semibold text-white">Health</h1>
+          <p className="mt-1 text-sm text-gray-400">Your composite wellness score, vitals, and long-term trends</p>
         </div>
-        
-        <button className="mt-4 md:mt-0 flex items-center bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-md transition duration-200">
-          <Plus className="mr-2 h-5 w-5" />
-          Log Progress
-        </button>
+        <Button variant="subtle" size="sm" onClick={() => quickAdd.openWith('weight')}>
+          <Plus className="mr-1.5 h-4 w-4" />
+          Log progress
+        </Button>
+      </motion.div>
+
+      <motion.div variants={item} className="mb-5">
+        <HealthScoreCard health={health} />
+      </motion.div>
+
+      <div className="mb-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <motion.div variants={item}>
+          <MetricStatCard
+            title="Steps (7d avg)"
+            value={metrics.avgLast('steps', 7)}
+            format={(n) => Math.round(n).toLocaleString()}
+            icon={Footprints}
+            iconClassName="bg-primary-500/15 text-primary-300"
+            sparkData={metrics.sparkValues('steps', 14)}
+            sparkColor="#857BFF"
+          />
+        </motion.div>
+        <motion.div variants={item}>
+          <MetricStatCard
+            title="Resting heart rate"
+            value={metrics.latest('heart_rate_resting')}
+            unit="bpm"
+            icon={HeartPulse}
+            iconClassName="bg-secondary-500/15 text-secondary-400"
+            sparkData={metrics.sparkValues('heart_rate_resting', 14)}
+            sparkColor="#FF6584"
+          />
+        </motion.div>
+        <motion.div variants={item}>
+          <MetricStatCard
+            title="Sleep (7d avg)"
+            value={metrics.avgLast('sleep_minutes', 7) != null ? metrics.avgLast('sleep_minutes', 7)! / 60 : null}
+            format={(n) => n.toFixed(1)}
+            unit="h"
+            icon={Moon}
+            iconClassName="bg-hydration-500/15 text-hydration-400"
+            sparkData={metrics.sparkValues('sleep_minutes', 14)}
+            sparkColor="#38BDF8"
+          />
+        </motion.div>
+        <motion.div variants={item}>
+          <MetricStatCard
+            title="Body fat"
+            value={metrics.latest('body_fat_pct')}
+            format={(n) => n.toFixed(1)}
+            unit="%"
+            icon={Percent}
+            iconClassName="bg-success-500/15 text-success-400"
+            sparkData={metrics.sparkValues('body_fat_pct', 12)}
+            sparkColor="#34D399"
+          />
+        </motion.div>
       </div>
-      
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <ProgressChart 
-          title="Weight Progress" 
-          data={progressLogs.length > 0 ? weightChartData : {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-            datasets: [
-              {
-                label: 'Weight (lbs)',
-                data: [185, 183, 180, 178, 175, 172],
-                borderColor: '#6C63FF',
-                backgroundColor: 'rgba(108, 99, 255, 0.2)',
-                tension: 0.4,
-                fill: true,
-              },
-            ],
-          }} 
-        />
-        <ProgressChart title="Calorie Intake vs. Burn" data={calorieChartData} />
+
+      <div className="mb-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <motion.div variants={item}>
+          <WeightTrendChart logs={weightHistory.logs} onLogWeight={() => quickAdd.openWith('weight')} rangeControl title="Weight trend" />
+        </motion.div>
+        <motion.div variants={item}>
+          <BodyCompChart bodyFat={metrics.get('body_fat_pct')} muscleMass={metrics.get('muscle_mass_kg')} />
+        </motion.div>
       </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <ProgressChart title="Workout Consistency" data={workoutChartData} />
-        <div className="bg-dark-500 rounded-lg shadow-md p-6">
-          <h3 className="text-white text-lg font-medium mb-4">Stats Summary</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-dark-400 p-4 rounded-lg">
-              <p className="text-gray-400 text-sm">Starting Weight</p>
-              <p className="text-2xl font-semibold text-white">185 lbs</p>
-            </div>
-            <div className="bg-dark-400 p-4 rounded-lg">
-              <p className="text-gray-400 text-sm">Current Weight</p>
-              <p className="text-2xl font-semibold text-white">172 lbs</p>
-            </div>
-            <div className="bg-dark-400 p-4 rounded-lg">
-              <p className="text-gray-400 text-sm">Total Loss</p>
-              <p className="text-2xl font-semibold text-green-500">-13 lbs</p>
-            </div>
-            <div className="bg-dark-400 p-4 rounded-lg">
-              <p className="text-gray-400 text-sm">Avg. Weekly Loss</p>
-              <p className="text-2xl font-semibold text-green-500">-1.1 lbs</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Progress Logs */}
-      <div className="bg-dark-500 rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white text-lg font-medium">Progress Logs</h3>
-          <button className="flex items-center text-primary-400 hover:text-primary-300 transition duration-150">
-            <Calendar className="h-5 w-5 mr-1" />
-            View Calendar
-          </button>
-        </div>
-        
-        {loading ? (
-          <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-500"></div>
-          </div>
-        ) : progressLogs.length > 0 ? (
-          <div className="space-y-4">
-            {progressLogs.slice(0, 5).map((log) => (
-              <div key={log.id} className="bg-dark-400 p-4 rounded-lg">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-white font-medium">
-                      {new Date(log.created_at).toLocaleDateString('en-US', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })}
+
+      <motion.div variants={item}>
+        <ActivityConsistencyChart days={activity.days} />
+      </motion.div>
+
+      {weightHistory.logs.some((l) => l.notes || l.mood) && (
+        <motion.div variants={item} className="mt-5">
+          <Card className="p-5">
+            <h3 className="text-sm font-semibold text-white">Notes &amp; mood</h3>
+            <div className="mt-3 space-y-3">
+              {weightHistory.logs
+                .filter((l) => l.notes || l.mood)
+                .slice(-6)
+                .reverse()
+                .map((log) => (
+                  <div key={log.id} className="rounded-xl bg-surface-2 p-3">
+                    <p className="text-xs text-gray-500">
+                      {new Date(log.created_at).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
                     </p>
-                    {log.weight && (
-                      <p className="text-gray-300 mt-1">Weight: {log.weight} lbs</p>
-                    )}
-                    {log.mood && (
-                      <p className="text-gray-300 mt-1">Mood: {log.mood}</p>
-                    )}
+                    {log.mood && <p className="mt-1 text-sm text-gray-300">Mood: {log.mood}</p>}
+                    {log.notes && <p className="mt-1 text-sm text-gray-400">{log.notes}</p>}
                   </div>
-                  <div className="bg-dark-500 px-3 py-1 rounded-full text-sm text-primary-400">
-                    Details
-                  </div>
-                </div>
-                {log.notes && (
-                  <p className="text-gray-400 mt-2 border-t border-dark-300 pt-2">{log.notes}</p>
-                )}
-              </div>
-            ))}
-            
-            {progressLogs.length > 5 && (
-              <button className="w-full py-2 text-center text-primary-400 hover:text-primary-300 transition duration-150">
-                View All Logs
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-300 mb-4">No progress logs found. Start tracking your progress!</p>
-            <button className="inline-flex items-center bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-md transition duration-200">
-              <Plus className="mr-2 h-5 w-5" />
-              Log Progress
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+                ))}
+            </div>
+          </Card>
+        </motion.div>
+      )}
+    </motion.div>
   );
 };
 

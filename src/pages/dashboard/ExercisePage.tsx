@@ -1,386 +1,299 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Search, Clock, Dumbbell, Calendar } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../lib/supabase';
-import { toast } from 'react-hot-toast';
+import React, { useMemo, useState } from 'react';
+import { motion, useReducedMotion, Variants } from 'framer-motion';
+import { Search, Dumbbell, Clock, ScanFace, UserCog, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useDailyLogContext } from '../../context/DailyLogContext';
+import { generateWeeklyExercisePlan } from '../../lib/planGenerator';
+import { useExerciseLibrary } from '../../hooks/useExerciseLibrary';
+import { useWorkoutSessions } from '../../hooks/useWorkoutSessions';
+import { ExerciseInfo } from '../../services/exercises';
+import Card from '../../components/ui/Card';
+import Tabs from '../../components/ui/Tabs';
+import Button from '../../components/ui/Button';
+import Badge from '../../components/ui/Badge';
+import Skeleton from '../../components/ui/Skeleton';
+import EmptyState from '../../components/ui/EmptyState';
+import ExerciseDetailModal from '../../components/dashboard/ExerciseDetailModal';
 
-type Exercise = {
-  name: string;
-  category: string;
-  sets: number;
-  reps: number;
-  rest_seconds: number;
+const container: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
+const item: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 120, damping: 18 } },
 };
 
-type WorkoutDay = {
-  day: string;
-  type: 'workout' | 'rest';
-  exercises: Exercise[];
-  estimated_duration?: number;
-  notes?: string;
-};
+const TABS = [
+  { id: 'plan', label: 'My Plan' },
+  { id: 'library', label: 'Library' },
+  { id: 'history', label: 'History' },
+];
 
-type WorkoutPlan = {
-  workout_plan: WorkoutDay[];
-  intensity: string;
-  goal: string;
-  duration_weeks: number;
-  notes: string;
-};
-
-type ExercisePlan = {
-  id: string;
-  name: string;
-  description: string | null;
-  duration: number | null;
-  difficulty: string | null;
-  created_at: string;
+const TYPE_TONE: Record<string, 'primary' | 'success' | 'alert' | 'neutral'> = {
+  cardio: 'alert',
+  strength: 'primary',
+  hiit: 'alert',
+  flexibility: 'success',
+  mixed: 'neutral',
 };
 
 const ExercisePage: React.FC = () => {
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [exercisePlans, setExercisePlans] = useState<ExercisePlan[]>([]);
-  const [workoutPlan, setWorkoutPlan] = useState<WorkoutPlan | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  useEffect(() => {
-    if (user) {
-      fetchExercisePlans();
-      fetchWorkoutRecommendations();
-    }
-  }, [user]);
-  
-  const fetchUserProfile = async () => {
-    try {
-      if (!user) return null;
+  const navigate = useNavigate();
+  const { profile, profileLoading, dailyLog, insights } = useDailyLogContext();
+  const reducedMotion = useReducedMotion();
+  const [tab, setTab] = useState('plan');
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+  const { nutritionProfile } = insights;
+  const weeklyPlan = useMemo(() => (nutritionProfile && profile ? generateWeeklyExercisePlan(profile) : []), [nutritionProfile, profile]);
 
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      return null;
-    }
-  };
-
-  const generateWeeklyExercisePlan = (profile: any) => {
-    const goal = profile.goal || 'maintain';
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    
-    const exerciseTemplates = {
-      weight_loss: [
-        { name: 'Cardio (Running)', duration: '30 min', calories_burned: 300, type: 'cardio' },
-        { name: 'HIIT Training', duration: '25 min', calories_burned: 250, type: 'hiit' },
-        { name: 'Cycling', duration: '45 min', calories_burned: 400, type: 'cardio' },
-        { name: 'Swimming', duration: '30 min', calories_burned: 350, type: 'cardio' },
-        { name: 'Strength Training', duration: '40 min', calories_burned: 200, type: 'strength' }
-      ],
-      weight_gain: [
-        { name: 'Weight Lifting', duration: '45 min', calories_burned: 180, type: 'strength' },
-        { name: 'Compound Exercises', duration: '40 min', calories_burned: 160, type: 'strength' },
-        { name: 'Resistance Training', duration: '35 min', calories_burned: 150, type: 'strength' },
-        { name: 'Light Cardio', duration: '20 min', calories_burned: 120, type: 'cardio' }
-      ],
-      muscle_gain: [
-        { name: 'Heavy Lifting', duration: '50 min', calories_burned: 200, type: 'strength' },
-        { name: 'Progressive Overload', duration: '45 min', calories_burned: 180, type: 'strength' },
-        { name: 'Compound Movements', duration: '40 min', calories_burned: 170, type: 'strength' },
-        { name: 'Isolation Exercises', duration: '30 min', calories_burned: 140, type: 'strength' }
-      ],
-      maintain: [
-        { name: 'Mixed Training', duration: '35 min', calories_burned: 220, type: 'mixed' },
-        { name: 'Moderate Cardio', duration: '30 min', calories_burned: 200, type: 'cardio' },
-        { name: 'Strength Training', duration: '40 min', calories_burned: 180, type: 'strength' },
-        { name: 'Flexibility & Yoga', duration: '25 min', calories_burned: 100, type: 'flexibility' }
-      ]
-    };
-
-    const exercises = exerciseTemplates[goal as keyof typeof exerciseTemplates] || exerciseTemplates.maintain;
-    
-    const workoutPlan: WorkoutPlan = {
-      workout_plan: days.map((day, index) => ({
-        day,
-        type: index % 7 === 6 ? 'rest' : 'workout',
-        exercises: index % 7 === 6 ? [] : [
-          {
-            name: exercises[index % exercises.length].name,
-            category: exercises[index % exercises.length].type,
-            sets: 3,
-            reps: 12,
-            rest_seconds: 60
-          }
-        ],
-        estimated_duration: index % 7 === 6 ? 0 : parseInt(exercises[index % exercises.length].duration),
-        notes: index % 7 === 6 ? 'Take a complete rest day. Focus on recovery, light stretching, or gentle walking.' : ''
-      })),
-      intensity: goal === 'weight_loss' ? 'High' : goal === 'weight_gain' || goal === 'muscle_gain' ? 'Moderate' : 'Balanced',
-      goal: goal,
-      duration_weeks: 4,
-      notes: `Personalized ${goal.replace('_', ' ')} workout plan based on your profile.`
-    };
-    
-    return workoutPlan;
-  };
-
-  const fetchWorkoutRecommendations = async () => {
-    try {
-      const userProfile = await fetchUserProfile();
-      if (!userProfile) {
-        toast.error('Please complete your profile first');
-        return;
-      }
-
-      const generatedPlan = generateWeeklyExercisePlan(userProfile);
-      setWorkoutPlan(generatedPlan);
-    } catch (error: any) {
-      console.error('Error generating workout recommendations:', error);
-      toast.error('Failed to generate workout recommendations');
-    }
-  };
-
-  const fetchExercisePlans = async () => {
-    try {
-      setLoading(true);
-      
-      if (!user) return;
-      
-      const { data, error } = await supabase
-        .from('exercise_plans')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        throw error;
-      }
-      
-      if (data) {
-        setExercisePlans(data);
-      }
-    } catch (error) {
-      console.error('Error fetching exercise plans:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const getDifficultyColor = (difficulty: string | null) => {
-    if (!difficulty) return 'bg-gray-500';
-    
-    switch (difficulty.toLowerCase()) {
-      case 'beginner':
-      case 'low':
-        return 'bg-green-500';
-      case 'intermediate':
-      case 'moderate':
-        return 'bg-primary-500';
-      case 'advanced':
-      case 'high':
-        return 'bg-secondary-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
-
-  const getCategoryColor = (category: string) => {
-    switch (category.toLowerCase()) {
-      case 'cardio':
-        return 'bg-red-500';
-      case 'strength':
-        return 'bg-blue-500';
-      case 'core':
-        return 'bg-yellow-500';
-      case 'functional':
-        return 'bg-purple-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
-
-  const renderWorkoutDay = (day: WorkoutDay) => {
-    if (day.type === 'rest') {
-      return (
-        <div key={day.day} className="bg-dark-500 rounded-lg p-6">
-          <div className="flex items-center mb-4">
-            <Calendar className="h-6 w-6 text-primary-500 mr-2" />
-            <h3 className="text-xl font-semibold text-white">{day.day}</h3>
-            <span className="ml-2 px-2 py-1 text-xs font-medium text-white rounded-full bg-green-500">
-              Rest Day
-            </span>
-          </div>
-          <p className="text-gray-400">{day.notes}</p>
-        </div>
-      );
-    }
-
+  if (profileLoading) {
     return (
-      <div key={day.day} className="bg-dark-500 rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center">
-            <Dumbbell className="h-6 w-6 text-primary-500 mr-2" />
-            <h3 className="text-xl font-semibold text-white">{day.day}</h3>
-          </div>
-          <div className="flex items-center text-gray-400">
-            <Clock className="h-4 w-4 mr-1" />
-            <span className="text-sm">{day.estimated_duration} min</span>
-          </div>
-        </div>
-        
-        <div className="space-y-3">
-          {day.exercises.map((exercise, idx) => (
-            <div key={idx} className="bg-dark-400 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-medium text-white">{exercise.name}</h4>
-                <span className={`px-2 py-1 text-xs font-medium text-white rounded-full ${getCategoryColor(exercise.category)}`}>
-                  {exercise.category}
-                </span>
-              </div>
-              <div className="flex items-center text-gray-300 text-sm space-x-4">
-                <span>{exercise.sets} sets</span>
-                <span>{exercise.reps} reps</span>
-                <span>{exercise.rest_seconds}s rest</span>
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="mx-auto max-w-7xl space-y-6">
+        <Skeleton className="h-9 w-56" />
+        <Skeleton className="h-64" />
       </div>
     );
-  };
-  
-  const filteredExercisePlans = exercisePlans.filter(plan => 
-    plan.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (plan.description && plan.description.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-  
-  return (
-    <div>
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Exercise Plans</h1>
-          <p className="text-gray-400 mt-1">Your personalized workout recommendations</p>
-        </div>
-        
-        <button 
-          onClick={fetchWorkoutRecommendations}
-          className="mt-4 md:mt-0 flex items-center bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-md transition duration-200"
-        >
-          <Plus className="mr-2 h-5 w-5" />
-          Refresh Recommendations
-        </button>
-      </div>
+  }
 
-      {/* AI Workout Plan */}
-      {workoutPlan && (
-        <div className="mb-8">
-          <div className="bg-dark-500 rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Your Personalized Workout Plan</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div className="text-center">
-                <h3 className="text-lg font-bold text-primary-400">{workoutPlan.intensity}</h3>
-                <p className="text-gray-400">Intensity</p>
-              </div>
-              <div className="text-center">
-                <h3 className="text-lg font-bold text-primary-400">{workoutPlan.goal}</h3>
-                <p className="text-gray-400">Goal</p>
-              </div>
-              <div className="text-center">
-                <h3 className="text-lg font-bold text-primary-400">{workoutPlan.duration_weeks} weeks</h3>
-                <p className="text-gray-400">Duration</p>
-              </div>
-            </div>
-            <p className="text-gray-300 text-sm">{workoutPlan.notes}</p>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {workoutPlan.workout_plan.map(renderWorkoutDay)}
-          </div>
+  return (
+    <motion.div className="mx-auto max-w-7xl" variants={reducedMotion ? undefined : container} initial="hidden" animate="show">
+      <motion.div variants={item} className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl font-semibold text-white">Training</h1>
+          <p className="mt-1 text-sm text-gray-400">Your weekly plan, the full exercise library, and session history</p>
         </div>
-      )}
-      
-      {/* Search and filters */}
-      <div className="bg-dark-500 rounded-lg shadow-md p-4 mb-6">
-        <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
-          <div className="relative flex-grow">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
+        <Tabs tabs={TABS} active={tab} onChange={setTab} />
+      </motion.div>
+
+      {tab === 'plan' &&
+        (!nutritionProfile ? (
+          <motion.div variants={item}>
+            <Card>
+              <EmptyState
+                icon={UserCog}
+                title="Complete your profile"
+                description="Add your weight, height, and goal to unlock a personalized weekly workout plan."
+                actionLabel="Complete profile"
+                onAction={() => navigate('/dashboard/profile')}
+                className="py-16"
+              />
+            </Card>
+          </motion.div>
+        ) : (
+          <PlanTab weeklyPlan={weeklyPlan} isCompleted={dailyLog.isCompleted} onToggle={dailyLog.toggleCompletion} />
+        ))}
+
+      {tab === 'library' && <LibraryTab />}
+      {tab === 'history' && <HistoryTab />}
+    </motion.div>
+  );
+};
+
+// ---------- My Plan ----------
+
+const PlanTab: React.FC<{
+  weeklyPlan: ReturnType<typeof generateWeeklyExercisePlan>;
+  isCompleted: (type: 'meal' | 'workout', key: string) => boolean;
+  onToggle: (item: { itemType: 'meal' | 'workout'; itemKey: string; itemName: string }) => void;
+}> = ({ weeklyPlan, isCompleted, onToggle }) => {
+  const navigate = useNavigate();
+  const todayIndex = (new Date().getDay() + 6) % 7;
+
+  return (
+    <motion.div variants={item} className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      {weeklyPlan.map((dayPlan, i) => {
+        const isToday = i === todayIndex;
+        const workout = dayPlan.exercises[0];
+        const isRest = workout?.type === 'rest';
+        const done = isToday && !isRest && isCompleted('workout', 'workout');
+
+        return (
+          <Card key={dayPlan.day} className={`p-5 ${isToday ? 'ring-1 ring-primary-400/50' : ''}`}>
+            <div className="flex items-center justify-between">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
+                {dayPlan.day}
+                {isToday && <Badge tone="primary">Today</Badge>}
+              </h3>
+              {!isRest && (
+                <span className="flex items-center gap-1 text-xs text-gray-500">
+                  <Clock className="h-3.5 w-3.5" />
+                  {workout.duration}
+                </span>
+              )}
             </div>
+
+            {isRest ? (
+              <p className="mt-3 text-sm text-gray-400">Rest day — recovery, light stretching, or a gentle walk.</p>
+            ) : (
+              <div className="mt-3 flex items-center justify-between rounded-xl bg-surface-2 px-3 py-2.5">
+                <div>
+                  <p className="text-sm font-medium text-white">{workout.name}</p>
+                  <Badge tone={TYPE_TONE[workout.type] || 'neutral'} className="mt-1">{workout.type}</Badge>
+                </div>
+                <span className="text-xs text-gray-400">{workout.calories_burned} kcal</span>
+              </div>
+            )}
+
+            {isToday && !isRest && (
+              <button
+                onClick={() => onToggle({ itemType: 'workout', itemKey: 'workout', itemName: workout.name })}
+                className={`mt-3 w-full rounded-lg py-2 text-xs font-medium transition-colors ${
+                  done ? 'bg-success-500/15 text-success-400' : 'bg-surface-2 text-gray-300 hover:bg-surface-3'
+                }`}
+              >
+                {done ? 'Completed' : 'Mark as complete'}
+              </button>
+            )}
+          </Card>
+        );
+      })}
+
+      <Card className="flex flex-col items-center justify-center gap-3 p-6 text-center lg:col-span-2">
+        <ScanFace className="h-8 w-8 text-primary-300" />
+        <div>
+          <p className="font-medium text-white">Want feedback on your form?</p>
+          <p className="mt-0.5 text-sm text-gray-400">Use your webcam for live rep counting and form scoring.</p>
+        </div>
+        <Button onClick={() => navigate('/dashboard/coach')}>Open Form Coach</Button>
+      </Card>
+    </motion.div>
+  );
+};
+
+// ---------- Library ----------
+
+const LibraryTab: React.FC = () => {
+  const { filtered, loading, error, filters, setFilters, bodyParts, equipments } = useExerciseLibrary();
+  const [selected, setSelected] = useState<ExerciseInfo | null>(null);
+
+  return (
+    <motion.div variants={item} className="space-y-4">
+      <Card className="p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
             <input
-              type="text"
-              placeholder="Search workouts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 w-full p-2 bg-dark-400 border border-dark-300 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              value={filters.query}
+              onChange={(e) => setFilters((f) => ({ ...f, query: e.target.value }))}
+              placeholder="Search exercises — e.g. squat, lat pulldown"
+              className="w-full rounded-xl border border-surface-line-strong bg-surface-2 py-2.5 pl-10 pr-3.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
-          
-          <select className="p-2 bg-dark-400 border border-dark-300 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500">
-            <option value="all">All Difficulties</option>
-            <option value="beginner">Beginner</option>
-            <option value="intermediate">Intermediate</option>
-            <option value="advanced">Advanced</option>
+          <select
+            value={filters.bodyPart}
+            onChange={(e) => setFilters((f) => ({ ...f, bodyPart: e.target.value }))}
+            className="rounded-xl border border-surface-line-strong bg-surface-2 px-3.5 py-2.5 text-sm text-white capitalize focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">All body parts</option>
+            {bodyParts.map((b) => (
+              <option key={b} value={b}>{b}</option>
+            ))}
+          </select>
+          <select
+            value={filters.equipment}
+            onChange={(e) => setFilters((f) => ({ ...f, equipment: e.target.value }))}
+            className="rounded-xl border border-surface-line-strong bg-surface-2 px-3.5 py-2.5 text-sm text-white capitalize focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">All equipment</option>
+            {equipments.map((e) => (
+              <option key={e} value={e}>{e}</option>
+            ))}
           </select>
         </div>
-      </div>
-      
-      {/* Saved Exercise Plans Section */}
-      <h2 className="text-xl font-semibold text-white mb-4">Your Saved Exercise Plans</h2>
+      </Card>
+
       {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
-        </div>
-      ) : filteredExercisePlans.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredExercisePlans.map((plan) => (
-            <div key={plan.id} className="bg-dark-500 rounded-lg shadow-md overflow-hidden">
-              <div className="p-6">
-                <div className="flex items-center mb-2">
-                  <h3 className="text-xl font-semibold text-white">{plan.name}</h3>
-                  {plan.difficulty && (
-                    <span className={`ml-2 px-2 py-1 text-xs font-medium text-white rounded-full ${getDifficultyColor(plan.difficulty)}`}>
-                      {plan.difficulty}
-                    </span>
-                  )}
-                </div>
-                
-                {plan.description && (
-                  <p className="text-gray-400 mb-4">{plan.description}</p>
-                )}
-                
-                <div className="flex items-center mb-4">
-                  <Clock className="h-5 w-5 text-gray-400 mr-2" />
-                  <span className="text-white">{plan.duration ? `${plan.duration} minutes` : 'Duration not set'}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <button className="flex items-center text-primary-400 hover:text-primary-300 transition duration-150">
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
-                  </button>
-                  <button className="flex items-center text-secondary-500 hover:text-secondary-400 transition duration-150">
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-20" />
           ))}
         </div>
+      ) : error ? (
+        <Card>
+          <EmptyState icon={Dumbbell} title="Library unavailable" description="Couldn't reach the exercise database. Check your connection and try again." className="py-12" />
+        </Card>
+      ) : filtered.length === 0 ? (
+        <Card>
+          <EmptyState icon={Search} title="No matches" description="Try a different search term or clear the filters." className="py-12" />
+        </Card>
       ) : (
-        <div className="bg-dark-500 rounded-lg shadow-md p-8 text-center">
-          <p className="text-gray-300 mb-4">No exercise plans found. Create your first workout to get started!</p>
-          <button className="inline-flex items-center bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-md transition duration-200">
-            <Plus className="mr-2 h-5 w-5" />
-            Create New Workout
-          </button>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.slice(0, 60).map((ex) => (
+            <Card key={ex.id} interactive onClick={() => setSelected(ex)} className="flex items-center gap-3 p-3">
+              {ex.mediaUrl ? (
+                <img src={ex.mediaUrl} alt={ex.name} className="h-14 w-14 flex-shrink-0 rounded-lg bg-surface-2 object-contain" />
+              ) : (
+                <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-lg bg-surface-2 text-gray-500">
+                  <Dumbbell className="h-5 w-5" />
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium capitalize text-white">{ex.name}</p>
+                <p className="truncate text-xs capitalize text-gray-500">{ex.bodyPart} · {ex.equipment}</p>
+              </div>
+            </Card>
+          ))}
         </div>
       )}
-    </div>
+
+      <ExerciseDetailModal exercise={selected} onClose={() => setSelected(null)} />
+    </motion.div>
+  );
+};
+
+// ---------- History ----------
+
+const HistoryTab: React.FC = () => {
+  const { sessions, loading } = useWorkoutSessions();
+  const navigate = useNavigate();
+
+  if (loading) {
+    return (
+      <motion.div variants={item} className="space-y-3">
+        <Skeleton className="h-16" />
+        <Skeleton className="h-16" />
+      </motion.div>
+    );
+  }
+
+  if (sessions.length === 0) {
+    return (
+      <motion.div variants={item}>
+        <Card>
+          <EmptyState
+            icon={Sparkles}
+            title="No Form Coach sessions yet"
+            description="Analyze a workout with the AI Form Coach and your rep counts and form scores will show up here."
+            actionLabel="Open Form Coach"
+            onAction={() => navigate('/dashboard/coach')}
+            className="py-16"
+          />
+        </Card>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div variants={item} className="space-y-3">
+      {sessions.map((s) => (
+        <Card key={s.id} className="flex items-center justify-between p-4">
+          <div>
+            <p className="text-sm font-medium capitalize text-white">{s.exercise_key.replace(/-/g, ' ')}</p>
+            <p className="text-xs text-gray-500">{new Date(s.started_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+          </div>
+          <div className="flex items-center gap-6 text-sm">
+            <div className="text-center">
+              <p className="font-semibold text-white tabular-nums">{s.total_reps}</p>
+              <p className="text-xs text-gray-500">reps</p>
+            </div>
+            <div className="text-center">
+              <p className={`font-semibold tabular-nums ${(s.avg_form_score ?? 0) >= 80 ? 'text-success-400' : (s.avg_form_score ?? 0) >= 60 ? 'text-primary-300' : 'text-secondary-400'}`}>
+                {s.avg_form_score != null ? Math.round(s.avg_form_score) : '—'}
+              </p>
+              <p className="text-xs text-gray-500">form score</p>
+            </div>
+          </div>
+        </Card>
+      ))}
+    </motion.div>
   );
 };
 

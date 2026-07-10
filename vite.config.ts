@@ -10,6 +10,17 @@ export default defineConfig(async (): Promise<UserConfig> => {
     optimizeDeps: {
       exclude: ['lucide-react'],
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            recharts: ['recharts'],
+            'framer-motion': ['framer-motion'],
+            vendor: ['react', 'react-dom', 'react-router-dom'],
+          },
+        },
+      },
+    },
     server: {
       host: '0.0.0.0',
       proxy: {
