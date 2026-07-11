@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion, Variants } from 'framer-motion';
 import { Watch, CheckCircle2, RefreshCw, Unplug, Lock } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import { PROVIDERS } from '../../services/wearables';
 import { useConnections } from '../../hooks/useConnections';
+import { completeGoogleHealthConnect } from '../../services/googleHealth';
 
 const container: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const item: Variants = {
@@ -15,7 +18,41 @@ const item: Variants = {
 
 const DevicesPage: React.FC = () => {
   const reducedMotion = useReducedMotion();
-  const { connections, busy, isConnected, connect, sync, disconnect } = useConnections();
+  const { connections, busy, isConnected, connect, sync, disconnect, refresh } = useConnections();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [completingOAuth, setCompletingOAuth] = useState(false);
+  const handledCode = useRef<string | null>(null);
+
+  // Google redirects back here with ?code=... (or ?error=...) after consent.
+  useEffect(() => {
+    const code = searchParams.get('code');
+    const oauthError = searchParams.get('error');
+
+    if (oauthError) {
+      toast.error(`Google Health connection was cancelled or denied (${oauthError}).`);
+      navigate('/dashboard/devices', { replace: true });
+      return;
+    }
+    if (!code || handledCode.current === code) return;
+    handledCode.current = code;
+
+    setCompletingOAuth(true);
+    completeGoogleHealthConnect(code)
+      .then(() => {
+        toast.success('Google Health connected — syncing your data');
+        return refresh();
+      })
+      .catch((e) => {
+        console.error(e);
+        toast.error(e instanceof Error ? e.message : 'Could not complete the Google Health connection.');
+      })
+      .finally(() => {
+        setCompletingOAuth(false);
+        navigate('/dashboard/devices', { replace: true });
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   return (
     <motion.div className="mx-auto max-w-5xl" variants={reducedMotion ? undefined : container} initial="hidden" animate="show">
@@ -24,9 +61,17 @@ const DevicesPage: React.FC = () => {
         <p className="mt-1 text-sm text-gray-400">Connect wearables to power your Health Score, steps, sleep, and body composition</p>
       </motion.div>
 
+      {completingOAuth && (
+        <motion.div variants={item} className="mb-5 flex items-center gap-2 rounded-xl border border-primary-500/25 bg-primary-500/10 p-4 text-sm text-gray-300">
+          <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-t-2 border-primary-400" />
+          Completing your Google Health connection…
+        </motion.div>
+      )}
+
       <motion.div variants={item} className="mb-5 rounded-xl border border-hydration-500/25 bg-hydration-500/10 p-4 text-sm text-gray-300">
         Google Health Connect isn't listed here — it's an Android-only system service and has no web API, so it can't sync
-        to a browser-based app.
+        to a browser-based app. "Fitbit (via Google Health)" below is the new cloud API Google is replacing the legacy
+        Fitbit Web API with.
       </motion.div>
 
       <div className="space-y-4">

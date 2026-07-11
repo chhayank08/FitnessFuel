@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Database } from '../types/supabase';
 import { useAuth } from '../context/AuthContext';
 import { connectDemo, disconnectDemo, syncDemo, ProviderId } from '../services/wearables';
+import { startGoogleHealthConnect, syncGoogleHealth, disconnectGoogleHealth } from '../services/googleHealth';
 
 export type ConnectionRow = Database['public']['Tables']['device_connections']['Row'];
 
@@ -40,15 +41,22 @@ export function useConnections() {
 
   const connect = useCallback(
     async (provider: ProviderId) => {
-      if (!user || provider !== 'demo') return;
+      if (!user) return;
       setBusy(provider);
       try {
-        await connectDemo(user.id);
-        toast.success('Demo device connected — 90 days of data synced');
-        await refresh();
+        if (provider === 'demo') {
+          await connectDemo(user.id);
+          toast.success('Demo device connected — 90 days of data synced');
+          await refresh();
+        } else if (provider === 'google_health') {
+          // this navigates away to Google's consent screen; the callback
+          // page picks up from here on return, so don't refresh/reset busy
+          await startGoogleHealthConnect();
+          return;
+        }
       } catch (e) {
         console.error(e);
-        toast.error('Could not connect. Is the health_platform migration applied?');
+        toast.error(e instanceof Error ? e.message : 'Could not connect. Try again.');
       } finally {
         setBusy(null);
       }
@@ -58,15 +66,16 @@ export function useConnections() {
 
   const sync = useCallback(
     async (provider: ProviderId) => {
-      if (!user || provider !== 'demo') return;
+      if (!user) return;
       setBusy(provider);
       try {
-        await syncDemo(user.id);
+        if (provider === 'demo') await syncDemo(user.id);
+        else if (provider === 'google_health') await syncGoogleHealth();
         toast.success('Synced');
         await refresh();
       } catch (e) {
         console.error(e);
-        toast.error('Sync failed. Try again.');
+        toast.error(e instanceof Error ? e.message : 'Sync failed. Try again.');
       } finally {
         setBusy(null);
       }
@@ -76,15 +85,16 @@ export function useConnections() {
 
   const disconnect = useCallback(
     async (provider: ProviderId) => {
-      if (!user || provider !== 'demo') return;
+      if (!user) return;
       setBusy(provider);
       try {
-        await disconnectDemo(user.id);
-        toast.success('Disconnected — demo data removed');
+        if (provider === 'demo') await disconnectDemo(user.id);
+        else if (provider === 'google_health') await disconnectGoogleHealth();
+        toast.success('Disconnected');
         await refresh();
       } catch (e) {
         console.error(e);
-        toast.error('Could not disconnect. Try again.');
+        toast.error(e instanceof Error ? e.message : 'Could not disconnect. Try again.');
       } finally {
         setBusy(null);
       }

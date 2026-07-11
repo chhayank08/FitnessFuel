@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, useReducedMotion, Variants } from 'framer-motion';
 import { Search, ScanBarcode, Star, UserCog } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -16,11 +17,13 @@ import Button from '../../components/ui/Button';
 import Skeleton from '../../components/ui/Skeleton';
 import EmptyState from '../../components/ui/EmptyState';
 import ProgressBar from '../../components/ui/ProgressBar';
+import Modal from '../../components/ui/Modal';
 import CalorieRing from '../../components/dashboard/CalorieRing';
 import MacroBars from '../../components/dashboard/MacroBars';
 import FoodCard from '../../components/dashboard/FoodCard';
 import FoodDetailModal from '../../components/dashboard/FoodDetailModal';
 import BarcodeScanner from '../../components/dashboard/BarcodeScanner';
+import InsightBanner from '../../components/dashboard/InsightBanner';
 import { useNavigate } from 'react-router-dom';
 
 const container: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
@@ -48,7 +51,13 @@ const DietPage: React.FC = () => {
   const { user } = useAuth();
   const reducedMotion = useReducedMotion();
   const { profile, profileLoading, dailyLog, insights } = useDailyLogContext();
-  const [tab, setTab] = useState('today');
+  const [searchParams] = useSearchParams();
+  const [tab, setTab] = useState(() => searchParams.get('tab') || 'today');
+  const initialDay = useMemo(() => {
+    const raw = searchParams.get('day');
+    const n = raw != null ? parseInt(raw, 10) : NaN;
+    return Number.isInteger(n) && n >= 0 && n <= 6 ? n : undefined;
+  }, [searchParams]);
 
   const { nutritionProfile, targets } = insights;
   const weeklyPlan = useMemo(() => (nutritionProfile && profile ? generateWeeklyMealPlan(profile) : []), [nutritionProfile, profile]);
@@ -79,8 +88,8 @@ const DietPage: React.FC = () => {
               icon={UserCog}
               title="Complete your profile"
               description="Add your weight, height, and goal to unlock personalized nutrition targets and a daily meal plan."
-              actionLabel="Complete profile"
-              onAction={() => navigate('/dashboard/profile')}
+              actionLabel="Get started"
+              onAction={() => navigate('/dashboard/welcome')}
               className="py-16"
             />
           </Card>
@@ -89,8 +98,12 @@ const DietPage: React.FC = () => {
         <>
           {tab === 'today' && <TodayTab targets={targets!} />}
           {tab === 'search' && <SearchTab userId={user?.id} onLogged={() => dailyLog.refresh()} />}
-          {tab === 'plan' && <PlanTab weeklyPlan={weeklyPlan} isCompleted={dailyLog.isCompleted} onToggle={dailyLog.toggleCompletion} />}
-          {tab === 'insights' && <InsightsTab goal={nutritionProfile.goal} targets={targets!} consumed={dailyLog.consumed} completions={dailyLog.completions} />}
+          {tab === 'plan' && (
+            <PlanTab weeklyPlan={weeklyPlan} isCompleted={dailyLog.isCompleted} onToggle={dailyLog.toggleCompletion} initialDay={initialDay} />
+          )}
+          {tab === 'insights' && (
+            <InsightsTab goal={nutritionProfile.goal} targets={targets!} consumed={dailyLog.consumed} weightKg={nutritionProfile.weight} />
+          )}
         </>
       )}
     </motion.div>
@@ -102,9 +115,22 @@ const DietPage: React.FC = () => {
 const TodayTab: React.FC<{ targets: NonNullable<ReturnType<typeof useDailyLogContext>['insights']['targets']> }> = ({ targets }) => {
   const { dailyLog } = useDailyLogContext();
   const meals = dailyLog.completions.filter((c) => c.item_type === 'meal');
+  const proteinLeft = Math.max(targets.protein - dailyLog.consumed.protein, 0);
+  const caloriesLeft = Math.max(targets.dailyCalories - dailyLog.consumed.calories, 0);
 
   return (
     <motion.div variants={item} className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+      {caloriesLeft > 0 && (
+        <div className="lg:col-span-12">
+          <InsightBanner
+            text={
+              proteinLeft > 0
+                ? `${caloriesLeft.toLocaleString()} kcal and ${proteinLeft}g protein left today.`
+                : `${caloriesLeft.toLocaleString()} kcal left today — protein target already hit.`
+            }
+          />
+        </div>
+      )}
       <div className="lg:col-span-5">
         <CalorieRing consumed={dailyLog.consumed.calories} target={targets.dailyCalories} className="h-full" />
       </div>
@@ -300,9 +326,10 @@ const PlanTab: React.FC<{
   weeklyPlan: ReturnType<typeof generateWeeklyMealPlan>;
   isCompleted: (type: 'meal' | 'workout', key: string) => boolean;
   onToggle: (item: { itemType: 'meal' | 'workout'; itemKey: string; itemName: string; calories?: number; protein?: number; carbs?: number; fat?: number }) => void;
-}> = ({ weeklyPlan, isCompleted, onToggle }) => {
+  initialDay?: number;
+}> = ({ weeklyPlan, isCompleted, onToggle, initialDay }) => {
   const todayIndex = (new Date().getDay() + 6) % 7;
-  const [selectedDay, setSelectedDay] = useState(todayIndex);
+  const [selectedDay, setSelectedDay] = useState(initialDay ?? todayIndex);
   const [selectedMeal, setSelectedMeal] = useState<{ slot: MealSlot; meal: Meal } | null>(null);
   const dayPlan = weeklyPlan[selectedDay];
 
@@ -353,10 +380,9 @@ const PlanTab: React.FC<{
         })}
       </div>
 
-      {selectedMeal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedMeal(null)}>
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <Card className="relative max-h-[80vh] w-full max-w-lg overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+      <Modal open={!!selectedMeal} onClose={() => setSelectedMeal(null)} panelClassName="max-w-lg max-h-[80vh] overflow-y-auto">
+        {selectedMeal && (
+          <div className="p-6">
             <p className="text-xs font-medium uppercase tracking-wider text-gray-500">{selectedMeal.slot}</p>
             <h3 className="mt-1 font-display text-xl font-semibold text-white">{selectedMeal.meal.name}</h3>
             <div className="mt-4 grid grid-cols-4 gap-2 text-center">
@@ -389,9 +415,9 @@ const PlanTab: React.FC<{
               </ol>
             </div>
             <Button variant="ghost" className="mt-5 w-full" onClick={() => setSelectedMeal(null)}>Close</Button>
-          </Card>
-        </div>
-      )}
+          </div>
+        )}
+      </Modal>
     </motion.div>
   );
 };
@@ -402,8 +428,8 @@ const InsightsTab: React.FC<{
   goal: string;
   targets: NonNullable<ReturnType<typeof useDailyLogContext>['insights']['targets']>;
   consumed: ReturnType<typeof useDailyLogContext>['dailyLog']['consumed'];
-  completions: ReturnType<typeof useDailyLogContext>['dailyLog']['completions'];
-}> = ({ goal, targets, consumed }) => {
+  weightKg: number;
+}> = ({ goal, targets, consumed, weightKg }) => {
   const [topic] = useState(() => topicsForGoal(goal)[0]);
   const { articles, loading: researchLoading } = useResearch(topic);
 
@@ -431,8 +457,8 @@ const InsightsTab: React.FC<{
           ))}
           <div className="border-t border-surface-line pt-3 text-sm text-gray-400">
             Protein per kg body weight:{' '}
-            <span className="font-semibold text-white">{(targets.protein / (targets.bmr > 0 ? targets.bmr / 24 : 1)).toFixed(0)}</span>
-            {' '}— target is {(targets.protein).toFixed(0)}g/day
+            <span className="font-semibold text-white">{weightKg > 0 ? (targets.protein / weightKg).toFixed(1) : '—'}</span>
+            {' '}g/kg — target is {targets.protein.toFixed(0)}g/day
           </div>
         </div>
       </Card>

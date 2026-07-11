@@ -73,8 +73,8 @@ const TodaysPlanCard: React.FC<TodaysPlanCardProps> = ({ plan, isCompleted, onTo
           icon={UserCog}
           title="No plan yet"
           description="Complete your profile and your daily meals and workout will show up here."
-          actionLabel="Complete profile"
-          onAction={() => navigate('/dashboard/profile')}
+          actionLabel="Get started"
+          onAction={() => navigate('/dashboard/welcome')}
         />
       ) : (
         <div className="mt-3 space-y-1">

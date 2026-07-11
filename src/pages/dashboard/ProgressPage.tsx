@@ -1,18 +1,29 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion, useReducedMotion, Variants } from 'framer-motion';
-import { Plus, Footprints, HeartPulse, Moon, Percent } from 'lucide-react';
+import { Plus, Footprints, HeartPulse, Moon, Percent, Sparkles } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Skeleton from '../../components/ui/Skeleton';
+import EmptyState from '../../components/ui/EmptyState';
+import SegmentedControl from '../../components/ui/SegmentedControl';
+import { useAuth } from '../../context/AuthContext';
 import { useDailyLogContext } from '../../context/DailyLogContext';
 import { useHealthMetrics } from '../../hooks/useHealthMetrics';
 import { useWeeklyActivity } from '../../hooks/useWeeklyActivity';
 import { computeHealthScore } from '../../lib/healthScore';
+import { connectDemo } from '../../services/wearables';
 import HealthScoreCard from '../../components/dashboard/HealthScoreCard';
 import MetricStatCard from '../../components/dashboard/MetricStatCard';
 import WeightTrendChart from '../../components/dashboard/WeightTrendChart';
 import BodyCompChart from '../../components/dashboard/BodyCompChart';
 import ActivityConsistencyChart from '../../components/dashboard/ActivityConsistencyChart';
+
+const RANGE_OPTIONS = [
+  { id: '7', label: '7d' },
+  { id: '30', label: '30d' },
+  { id: '90', label: '90d' },
+];
 
 const container: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const item: Variants = {
@@ -22,9 +33,27 @@ const item: Variants = {
 
 const ProgressPage: React.FC = () => {
   const reducedMotion = useReducedMotion();
+  const { user } = useAuth();
   const { dailyLog, weightHistory, streak, insights, quickAdd } = useDailyLogContext();
-  const metrics = useHealthMetrics(90);
+  const [range, setRange] = useState('90');
+  const [connectingDemo, setConnectingDemo] = useState(false);
+  const metrics = useHealthMetrics(parseInt(range, 10));
   const activity = useWeeklyActivity(`${dailyLog.completions.length}`);
+
+  const tryDemoData = async () => {
+    if (!user) return;
+    setConnectingDemo(true);
+    try {
+      await connectDemo(user.id);
+      await metrics.refresh();
+      toast.success('Demo data connected — your charts are populated');
+    } catch (e) {
+      console.error(e);
+      toast.error('Could not connect demo data. Try again.');
+    } finally {
+      setConnectingDemo(false);
+    }
+  };
 
   const health = useMemo(
     () =>
@@ -64,15 +93,33 @@ const ProgressPage: React.FC = () => {
           <h1 className="font-display text-3xl font-semibold text-white">Health</h1>
           <p className="mt-1 text-sm text-gray-400">Your composite wellness score, vitals, and long-term trends</p>
         </div>
-        <Button variant="subtle" size="sm" onClick={() => quickAdd.openWith('weight')}>
-          <Plus className="mr-1.5 h-4 w-4" />
-          Log progress
-        </Button>
+        <div className="flex items-center gap-2">
+          <SegmentedControl options={RANGE_OPTIONS} active={range} onChange={setRange} size="sm" />
+          <Button variant="subtle" size="sm" onClick={() => quickAdd.openWith('weight')}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            Log progress
+          </Button>
+        </div>
       </motion.div>
 
       <motion.div variants={item} className="mb-5">
         <HealthScoreCard health={health} />
       </motion.div>
+
+      {!metrics.hasData && (
+        <motion.div variants={item} className="mb-5">
+          <Card>
+            <EmptyState
+              icon={Sparkles}
+              title="No wearable data yet"
+              description="Connect a device to see steps, sleep, heart rate, and body composition here — or try it now with demo data."
+              actionLabel={connectingDemo ? 'Connecting…' : 'Try with demo data'}
+              onAction={tryDemoData}
+              className="py-16"
+            />
+          </Card>
+        </motion.div>
+      )}
 
       <div className="mb-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <motion.div variants={item}>

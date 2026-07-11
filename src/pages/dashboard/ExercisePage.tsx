@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { motion, useReducedMotion, Variants } from 'framer-motion';
-import { Search, Dumbbell, Clock, ScanFace, UserCog, Sparkles } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Search, Dumbbell, Clock, UserCog, Sparkles } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDailyLogContext } from '../../context/DailyLogContext';
 import { generateWeeklyExercisePlan } from '../../lib/planGenerator';
 import { useExerciseLibrary } from '../../hooks/useExerciseLibrary';
@@ -9,11 +9,11 @@ import { useWorkoutSessions } from '../../hooks/useWorkoutSessions';
 import { ExerciseInfo } from '../../services/exercises';
 import Card from '../../components/ui/Card';
 import Tabs from '../../components/ui/Tabs';
-import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Skeleton from '../../components/ui/Skeleton';
 import EmptyState from '../../components/ui/EmptyState';
 import ExerciseDetailModal from '../../components/dashboard/ExerciseDetailModal';
+import FormCoachCTA from '../../components/dashboard/FormCoachCTA';
 
 const container: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const item: Variants = {
@@ -38,8 +38,15 @@ const TYPE_TONE: Record<string, 'primary' | 'success' | 'alert' | 'neutral'> = {
 const ExercisePage: React.FC = () => {
   const navigate = useNavigate();
   const { profile, profileLoading, dailyLog, insights } = useDailyLogContext();
+  const { sessions } = useWorkoutSessions();
   const reducedMotion = useReducedMotion();
-  const [tab, setTab] = useState('plan');
+  const [searchParams] = useSearchParams();
+  const [tab, setTab] = useState(() => searchParams.get('tab') || 'plan');
+  const initialDay = useMemo(() => {
+    const raw = searchParams.get('day');
+    const n = raw != null ? parseInt(raw, 10) : NaN;
+    return Number.isInteger(n) && n >= 0 && n <= 6 ? n : undefined;
+  }, [searchParams]);
 
   const { nutritionProfile } = insights;
   const weeklyPlan = useMemo(() => (nutritionProfile && profile ? generateWeeklyExercisePlan(profile) : []), [nutritionProfile, profile]);
@@ -71,14 +78,14 @@ const ExercisePage: React.FC = () => {
                 icon={UserCog}
                 title="Complete your profile"
                 description="Add your weight, height, and goal to unlock a personalized weekly workout plan."
-                actionLabel="Complete profile"
-                onAction={() => navigate('/dashboard/profile')}
+                actionLabel="Get started"
+                onAction={() => navigate('/dashboard/welcome')}
                 className="py-16"
               />
             </Card>
           </motion.div>
         ) : (
-          <PlanTab weeklyPlan={weeklyPlan} isCompleted={dailyLog.isCompleted} onToggle={dailyLog.toggleCompletion} />
+          <PlanTab weeklyPlan={weeklyPlan} isCompleted={dailyLog.isCompleted} onToggle={dailyLog.toggleCompletion} initialDay={initialDay} lastSession={sessions[0]} />
         ))}
 
       {tab === 'library' && <LibraryTab />}
@@ -93,67 +100,74 @@ const PlanTab: React.FC<{
   weeklyPlan: ReturnType<typeof generateWeeklyExercisePlan>;
   isCompleted: (type: 'meal' | 'workout', key: string) => boolean;
   onToggle: (item: { itemType: 'meal' | 'workout'; itemKey: string; itemName: string }) => void;
-}> = ({ weeklyPlan, isCompleted, onToggle }) => {
-  const navigate = useNavigate();
+  initialDay?: number;
+  lastSession?: ReturnType<typeof useWorkoutSessions>['sessions'][number];
+}> = ({ weeklyPlan, isCompleted, onToggle, initialDay, lastSession }) => {
   const todayIndex = (new Date().getDay() + 6) % 7;
+  const [selectedDay, setSelectedDay] = useState(initialDay ?? todayIndex);
+  const dayPlan = weeklyPlan[selectedDay];
+  const workout = dayPlan?.exercises[0];
+  const isRest = workout?.type === 'rest';
+  const isToday = selectedDay === todayIndex;
+  const done = isToday && !isRest && isCompleted('workout', 'workout');
 
   return (
-    <motion.div variants={item} className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      {weeklyPlan.map((dayPlan, i) => {
-        const isToday = i === todayIndex;
-        const workout = dayPlan.exercises[0];
-        const isRest = workout?.type === 'rest';
-        const done = isToday && !isRest && isCompleted('workout', 'workout');
+    <motion.div variants={item} className="space-y-5">
+      <FormCoachCTA lastSession={lastSession} />
 
-        return (
-          <Card key={dayPlan.day} className={`p-5 ${isToday ? 'ring-1 ring-primary-400/50' : ''}`}>
-            <div className="flex items-center justify-between">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
-                {dayPlan.day}
-                {isToday && <Badge tone="primary">Today</Badge>}
-              </h3>
-              {!isRest && (
-                <span className="flex items-center gap-1 text-xs text-gray-500">
-                  <Clock className="h-3.5 w-3.5" />
-                  {workout.duration}
-                </span>
-              )}
-            </div>
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {weeklyPlan.map((dayPlan, i) => (
+          <button
+            key={dayPlan.day}
+            onClick={() => setSelectedDay(i)}
+            className={`flex-shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
+              i === selectedDay ? 'bg-primary-500/20 text-white' : 'bg-surface-2 text-gray-400 hover:text-white'
+            } ${i === todayIndex ? 'ring-1 ring-primary-400/50' : ''}`}
+          >
+            {dayPlan.day.slice(0, 3)}
+          </button>
+        ))}
+      </div>
 
-            {isRest ? (
-              <p className="mt-3 text-sm text-gray-400">Rest day — recovery, light stretching, or a gentle walk.</p>
-            ) : (
-              <div className="mt-3 flex items-center justify-between rounded-xl bg-surface-2 px-3 py-2.5">
-                <div>
-                  <p className="text-sm font-medium text-white">{workout.name}</p>
-                  <Badge tone={TYPE_TONE[workout.type] || 'neutral'} className="mt-1">{workout.type}</Badge>
-                </div>
-                <span className="text-xs text-gray-400">{workout.calories_burned} kcal</span>
+      {dayPlan && workout && (
+        <Card className="p-5">
+          <div className="flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
+              {dayPlan.day}
+              {isToday && <Badge tone="primary">Today</Badge>}
+            </h3>
+            {!isRest && (
+              <span className="flex items-center gap-1 text-xs text-gray-500">
+                <Clock className="h-3.5 w-3.5" />
+                {workout.duration}
+              </span>
+            )}
+          </div>
+
+          {isRest ? (
+            <p className="mt-3 text-sm text-gray-400">Rest day — recovery, light stretching, or a gentle walk.</p>
+          ) : (
+            <div className="mt-3 flex items-center justify-between rounded-xl bg-surface-2 px-3 py-2.5">
+              <div>
+                <p className="text-sm font-medium text-white">{workout.name}</p>
+                <Badge tone={TYPE_TONE[workout.type] || 'neutral'} className="mt-1">{workout.type}</Badge>
               </div>
-            )}
+              <span className="text-xs text-gray-400">{workout.calories_burned} kcal</span>
+            </div>
+          )}
 
-            {isToday && !isRest && (
-              <button
-                onClick={() => onToggle({ itemType: 'workout', itemKey: 'workout', itemName: workout.name })}
-                className={`mt-3 w-full rounded-lg py-2 text-xs font-medium transition-colors ${
-                  done ? 'bg-success-500/15 text-success-400' : 'bg-surface-2 text-gray-300 hover:bg-surface-3'
-                }`}
-              >
-                {done ? 'Completed' : 'Mark as complete'}
-              </button>
-            )}
-          </Card>
-        );
-      })}
-
-      <Card className="flex flex-col items-center justify-center gap-3 p-6 text-center lg:col-span-2">
-        <ScanFace className="h-8 w-8 text-primary-300" />
-        <div>
-          <p className="font-medium text-white">Want feedback on your form?</p>
-          <p className="mt-0.5 text-sm text-gray-400">Use your webcam for live rep counting and form scoring.</p>
-        </div>
-        <Button onClick={() => navigate('/dashboard/coach')}>Open Form Coach</Button>
-      </Card>
+          {isToday && !isRest && (
+            <button
+              onClick={() => onToggle({ itemType: 'workout', itemKey: 'workout', itemName: workout.name })}
+              className={`mt-3 w-full rounded-lg py-2 text-xs font-medium transition-colors ${
+                done ? 'bg-success-500/15 text-success-400' : 'bg-surface-2 text-gray-300 hover:bg-surface-3'
+              }`}
+            >
+              {done ? 'Completed' : 'Mark as complete'}
+            </button>
+          )}
+        </Card>
+      )}
     </motion.div>
   );
 };
@@ -263,7 +277,7 @@ const HistoryTab: React.FC = () => {
             title="No Form Coach sessions yet"
             description="Analyze a workout with the AI Form Coach and your rep counts and form scores will show up here."
             actionLabel="Open Form Coach"
-            onAction={() => navigate('/dashboard/coach')}
+            onAction={() => navigate('/dashboard/exercise/coach')}
             className="py-16"
           />
         </Card>

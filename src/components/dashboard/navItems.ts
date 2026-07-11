@@ -4,7 +4,6 @@ import {
   Utensils,
   Dumbbell,
   ScanFace,
-  Calendar,
   GraduationCap,
   Watch,
   User,
@@ -18,15 +17,25 @@ export interface NavItem {
   icon: LucideIcon;
 }
 
-export const NAV_ITEMS: NavItem[] = [
-  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { name: 'Health', path: '/dashboard/progress', icon: HeartPulse },
+// The 5 daily-driver pillars — primary navigation on both mobile (bottom tab
+// bar) and desktop (sidebar).
+export const PILLAR_ITEMS: NavItem[] = [
+  { name: 'Today', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Nutrition', path: '/dashboard/diet', icon: Utensils },
   { name: 'Training', path: '/dashboard/exercise', icon: Dumbbell },
-  { name: 'Form Coach', path: '/dashboard/coach', icon: ScanFace },
-  { name: 'Schedule', path: '/dashboard/schedule', icon: Calendar },
-  { name: 'Learn', path: '/dashboard/learn', icon: GraduationCap },
-  { name: 'Devices', path: '/dashboard/devices', icon: Watch },
+  { name: 'Health', path: '/dashboard/progress', icon: HeartPulse },
+  { name: 'You', path: '/dashboard/profile', icon: User },
+];
+
+// Lower-frequency destinations, grouped under "You" — reachable via the
+// desktop sidebar's expandable group, the You pillar's in-page tabs on
+// mobile, and the command palette.
+export const SECONDARY_ITEMS: NavItem[] = [
   { name: 'Profile', path: '/dashboard/profile', icon: User },
+  { name: 'Devices', path: '/dashboard/devices', icon: Watch },
+  { name: 'Learn', path: '/dashboard/learn', icon: GraduationCap },
   { name: 'Settings', path: '/dashboard/settings', icon: Settings },
 ];
+
+// Not a top-level pillar — surfaced as a CTA within Training instead.
+export const COACH_ITEM: NavItem = { name: 'Form Coach', path: '/dashboard/exercise/coach', icon: ScanFace };

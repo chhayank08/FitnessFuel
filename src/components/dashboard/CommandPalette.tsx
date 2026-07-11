@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Scale, GlassWater, UtensilsCrossed, LogOut, LucideIcon } from 'lucide-react';
 import Modal from '../ui/Modal';
-import { NAV_ITEMS } from './navItems';
+import { PILLAR_ITEMS, SECONDARY_ITEMS, COACH_ITEM } from './navItems';
 import { useAuth } from '../../context/AuthContext';
 import { useDailyLogContext } from '../../context/DailyLogContext';
 import { useHotkey } from '../../hooks/useHotkey';
@@ -28,8 +28,11 @@ const CommandPalette: React.FC = () => {
 
   const commands = useMemo<Command[]>(() => {
     const close = () => palette.setOpen(false);
+    // Pillars minus "You" (its path duplicates Profile) plus every secondary
+    // destination plus the Form Coach deep link.
+    const navItems = [...PILLAR_ITEMS.slice(0, 4), ...SECONDARY_ITEMS, COACH_ITEM];
     return [
-      ...NAV_ITEMS.map<Command>((item) => ({
+      ...navItems.map<Command>((item) => ({
         id: `nav-${item.path}`,
         label: item.name,
         section: 'Navigate',

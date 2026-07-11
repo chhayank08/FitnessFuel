@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Capacitor } from '@capacitor/core';
 import { EXERCISES, ExerciseKey, Point3D, RepCounter, RepResult } from '../lib/poseAnalysis';
+
+function hapticRep() {
+  if (!Capacitor.isNativePlatform()) return;
+  Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+}
 
 export type SessionStatus = 'idle' | 'loading-model' | 'requesting-camera' | 'running' | 'ended' | 'error';
 
@@ -85,6 +92,7 @@ export function usePoseSession(exerciseKey: ExerciseKey) {
       if (rep) {
         setReps((prev) => [...prev, { ...rep, index: prev.length + 1 }]);
         if (rep.cue) setCurrentCue(rep.cue);
+        hapticRep();
       }
     }
 

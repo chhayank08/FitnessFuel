@@ -2,6 +2,7 @@ import React from 'react';
 import { Target } from 'lucide-react';
 import Card from '../ui/Card';
 import ProgressBar from '../ui/ProgressBar';
+import { formatWeight, convertWeight, WeightUnit } from '../../lib/units';
 
 interface GoalProgressCardProps {
   startWeight: number;
@@ -9,6 +10,7 @@ interface GoalProgressCardProps {
   targetWeight: number | null;
   projectedDate: Date | null;
   className?: string;
+  unit?: WeightUnit;
 }
 
 const GoalProgressCard: React.FC<GoalProgressCardProps> = ({
@@ -17,6 +19,7 @@ const GoalProgressCard: React.FC<GoalProgressCardProps> = ({
   targetWeight,
   projectedDate,
   className = '',
+  unit = 'kg',
 }) => {
   if (!targetWeight) {
     return (
@@ -44,15 +47,15 @@ const GoalProgressCard: React.FC<GoalProgressCardProps> = ({
       </div>
 
       <p className="mt-3 text-sm text-gray-300">
-        <span className="font-display text-lg font-semibold text-white tabular-nums">{remaining} kg</span> to go
+        <span className="font-display text-lg font-semibold text-white tabular-nums">{convertWeight(remaining, unit).toFixed(1)} {unit}</span> to go
       </p>
 
       <ProgressBar value={progress} colorClassName="bg-primary-gradient" className="mt-3" />
 
       <div className="mt-2 flex justify-between text-xs text-gray-500 tabular-nums">
-        <span>{startWeight} kg</span>
-        <span className="text-gray-300">{currentWeight} kg</span>
-        <span>{targetWeight} kg</span>
+        <span>{formatWeight(startWeight, unit)}</span>
+        <span className="text-gray-300">{formatWeight(currentWeight, unit)}</span>
+        <span>{formatWeight(targetWeight, unit)}</span>
       </div>
 
       {projectedDate && (

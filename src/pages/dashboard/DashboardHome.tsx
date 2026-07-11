@@ -1,13 +1,15 @@
 import React, { useMemo } from 'react';
 import { motion, useReducedMotion, Variants } from 'framer-motion';
-import { Activity, Flame, HeartPulse, Weight, UserCog, Footprints, Moon, ScanFace, ChevronRight } from 'lucide-react';
+import { Activity, Flame, HeartPulse, Weight, UserCog, Footprints, Moon, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useDailyLogContext } from '../../context/DailyLogContext';
-import { getTodaysPlan } from '../../lib/planGenerator';
+import { getTodaysPlan, generateWeeklyMealPlan, generateWeeklyExercisePlan } from '../../lib/planGenerator';
 import { useHealthMetrics } from '../../hooks/useHealthMetrics';
 import { useWeeklyActivity } from '../../hooks/useWeeklyActivity';
 import { useWorkoutSessions } from '../../hooks/useWorkoutSessions';
+import { useSettings } from '../../hooks/useSettings';
 import { computeHealthScore } from '../../lib/healthScore';
+import { convertWeight } from '../../lib/units';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import Skeleton from '../../components/ui/Skeleton';
@@ -22,6 +24,8 @@ import GoalProgressCard from '../../components/dashboard/GoalProgressCard';
 import InsightCard from '../../components/dashboard/InsightCard';
 import WeightTrendChart from '../../components/dashboard/WeightTrendChart';
 import TodaysPlanCard from '../../components/dashboard/TodaysPlanCard';
+import FormCoachCTA from '../../components/dashboard/FormCoachCTA';
+import WeekAtAGlanceStrip from '../../components/dashboard/WeekAtAGlanceStrip';
 import { useNavigate } from 'react-router-dom';
 
 const container: Variants = {
@@ -39,6 +43,8 @@ const DashboardHome: React.FC = () => {
   const navigate = useNavigate();
   const reducedMotion = useReducedMotion();
   const { profile, profileLoading, dailyLog, weightHistory, streak, insights, quickAdd } = useDailyLogContext();
+  const { settings } = useSettings();
+  const weightUnit = settings.units.weight;
   const metrics = useHealthMetrics(14);
   const activity = useWeeklyActivity(`${dailyLog.completions.length}`);
   const { sessions } = useWorkoutSessions();
@@ -47,6 +53,15 @@ const DashboardHome: React.FC = () => {
 
   const todaysPlan = useMemo(
     () => (nutritionProfile && profile ? getTodaysPlan(profile) : null),
+    [nutritionProfile, profile]
+  );
+
+  const weeklyMealPlan = useMemo(
+    () => (nutritionProfile && profile ? generateWeeklyMealPlan(profile) : []),
+    [nutritionProfile, profile]
+  );
+  const weeklyExercisePlan = useMemo(
+    () => (nutritionProfile && profile ? generateWeeklyExercisePlan(profile) : []),
     [nutritionProfile, profile]
   );
 
@@ -129,26 +144,79 @@ const DashboardHome: React.FC = () => {
             <EmptyState
               icon={UserCog}
               title="Set up your dashboard"
-              description="Add your weight, height, and goal to your profile — your calorie targets, macros, and daily plan are built from them."
-              actionLabel="Complete profile"
-              onAction={() => navigate('/dashboard/profile')}
+              description="Add your weight, height, and goal — your calorie targets, macros, and daily plan are built from them."
+              actionLabel="Get started"
+              onAction={() => navigate('/dashboard/welcome')}
               className="py-16"
             />
           </Card>
         </motion.div>
       ) : (
         <>
+          {/* Right now: rings + water + streak/goal */}
+          <div className="mb-5 grid grid-cols-1 gap-5 lg:grid-cols-12">
+            <motion.div variants={item} className="lg:col-span-4">
+              <CalorieRing consumed={dailyLog.consumed.calories} target={targets?.dailyCalories ?? 0} className="h-full" />
+            </motion.div>
+            <div className="flex flex-col gap-5 lg:col-span-4">
+              <motion.div variants={item} className="flex-1">
+                <MacroBars consumed={dailyLog.consumed} targets={targets!} className="h-full" />
+              </motion.div>
+              <motion.div variants={item}>
+                <WaterTracker waterMl={dailyLog.waterMl} targetMl={targets?.waterMl ?? 2500} onAdd={dailyLog.addWater} />
+              </motion.div>
+            </div>
+            <div className="flex flex-col gap-5 lg:col-span-4">
+              <motion.div variants={item}>
+                <StreakCard streak={streak} />
+              </motion.div>
+              <motion.div variants={item} className="flex-1">
+                <GoalProgressCard
+                  startWeight={startWeight ?? nutritionProfile.weight}
+                  currentWeight={currentWeight ?? nutritionProfile.weight}
+                  targetWeight={nutritionProfile.targetWeight}
+                  projectedDate={projectedGoalDate}
+                  unit={weightUnit}
+                  className="h-full"
+                />
+              </motion.div>
+            </div>
+          </div>
+
+          {/* Today's plan + this week */}
+          <div className="mb-5 grid grid-cols-1 gap-5 lg:grid-cols-12">
+            <motion.div variants={item} className="lg:col-span-7">
+              <TodaysPlanCard
+                plan={todaysPlan}
+                isCompleted={dailyLog.isCompleted}
+                onToggle={dailyLog.toggleCompletion}
+                className="h-full"
+              />
+            </motion.div>
+            <motion.div variants={item} className="lg:col-span-5">
+              <WeekAtAGlanceStrip
+                mealPlan={weeklyMealPlan}
+                exercisePlan={weeklyExercisePlan}
+                todayCompleted={{
+                  meals: todaysPlan != null && todaysPlan.meals.every((m) => dailyLog.isCompleted('meal', m.key)),
+                  workout: dailyLog.isCompleted('workout', 'workout'),
+                }}
+                className="h-full"
+              />
+            </motion.div>
+          </div>
+
           {/* Stat tiles */}
           <div className="mb-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <motion.div variants={item}>
               <StatTile
                 title="Current weight"
-                value={currentWeight ?? 0}
+                value={convertWeight(currentWeight ?? 0, weightUnit)}
                 format={(n) => n.toLocaleString(undefined, { maximumFractionDigits: 1 })}
-                unit="kg"
+                unit={weightUnit}
                 icon={Weight}
-                delta={weeklyDeltaKg}
-                deltaSuffix=" kg this week"
+                delta={weeklyDeltaKg != null ? Math.round(convertWeight(weeklyDeltaKg, weightUnit) * 10) / 10 : weeklyDeltaKg}
+                deltaSuffix={` ${weightUnit} this week`}
                 negativeIsGood={nutritionProfile.goal === 'weight_loss'}
               />
             </motion.div>
@@ -180,35 +248,6 @@ const DashboardHome: React.FC = () => {
                 iconClassName="bg-hydration-500/15 text-hydration-400"
               />
             </motion.div>
-          </div>
-
-          {/* Tracking row */}
-          <div className="mb-5 grid grid-cols-1 gap-5 lg:grid-cols-12">
-            <motion.div variants={item} className="lg:col-span-4">
-              <CalorieRing consumed={dailyLog.consumed.calories} target={targets?.dailyCalories ?? 0} className="h-full" />
-            </motion.div>
-            <div className="flex flex-col gap-5 lg:col-span-4">
-              <motion.div variants={item} className="flex-1">
-                <MacroBars consumed={dailyLog.consumed} targets={targets!} className="h-full" />
-              </motion.div>
-              <motion.div variants={item}>
-                <WaterTracker waterMl={dailyLog.waterMl} targetMl={targets?.waterMl ?? 2500} onAdd={dailyLog.addWater} />
-              </motion.div>
-            </div>
-            <div className="flex flex-col gap-5 lg:col-span-4">
-              <motion.div variants={item}>
-                <StreakCard streak={streak} />
-              </motion.div>
-              <motion.div variants={item} className="flex-1">
-                <GoalProgressCard
-                  startWeight={startWeight ?? nutritionProfile.weight}
-                  currentWeight={currentWeight ?? nutritionProfile.weight}
-                  targetWeight={nutritionProfile.targetWeight}
-                  projectedDate={projectedGoalDate}
-                  className="h-full"
-                />
-              </motion.div>
-            </div>
           </div>
 
           {/* Wearable strip — only shown once a device has synced data */}
@@ -253,50 +292,17 @@ const DashboardHome: React.FC = () => {
 
           {/* Form Coach CTA */}
           <motion.div variants={item} className="mb-5">
-            <Card className="flex flex-wrap items-center justify-between gap-4 p-5">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary-500/15 text-primary-300">
-                  <ScanFace className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-white">
-                    {lastSession ? `Last session: ${lastSession.exercise_key.replace(/-/g, ' ')}` : 'Try the AI Form Coach'}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    {lastSession
-                      ? `${lastSession.total_reps} reps · form score ${lastSession.avg_form_score != null ? Math.round(lastSession.avg_form_score) : '—'}`
-                      : 'Live rep counting and form feedback using your webcam'}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => navigate('/dashboard/coach')}
-                className="flex items-center gap-1 text-sm font-medium text-primary-300 hover:text-primary-200"
-              >
-                {lastSession ? 'New session' : 'Get started'}
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </Card>
+            <FormCoachCTA lastSession={lastSession} />
           </motion.div>
 
-          {/* Plan + trend row */}
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-            <motion.div variants={item} className="lg:col-span-7">
-              <TodaysPlanCard
-                plan={todaysPlan}
-                isCompleted={dailyLog.isCompleted}
-                onToggle={dailyLog.toggleCompletion}
-                className="h-full"
-              />
+          {/* Trend + insights */}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <motion.div variants={item}>
+              <WeightTrendChart logs={weightHistory.logs} onLogWeight={() => quickAdd.openWith('weight')} />
             </motion.div>
-            <div className="flex flex-col gap-5 lg:col-span-5">
-              <motion.div variants={item}>
-                <WeightTrendChart logs={weightHistory.logs} onLogWeight={() => quickAdd.openWith('weight')} />
-              </motion.div>
-              <motion.div variants={item} className="flex-1">
-                <InsightCard texts={insightTexts} className="h-full" />
-              </motion.div>
-            </div>
+            <motion.div variants={item}>
+              <InsightCard texts={insightTexts} className="h-full" />
+            </motion.div>
           </div>
         </>
       )}

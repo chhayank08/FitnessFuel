@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
 import { Scale, GlassWater, UtensilsCrossed } from 'lucide-react';
+import { Haptics, NotificationType } from '@capacitor/haptics';
+import { Capacitor } from '@capacitor/core';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import { useDailyLogContext, QuickAddTab } from '../../context/DailyLogContext';
+
+function hapticSuccess() {
+  if (!Capacitor.isNativePlatform()) return;
+  Haptics.notification({ type: NotificationType.Success }).catch(() => {});
+}
 
 const TABS: { id: QuickAddTab; label: string; icon: React.ElementType }[] = [
   { id: 'weight', label: 'Weight', icon: Scale },
@@ -63,6 +70,7 @@ const QuickAddModal: React.FC = () => {
           fat: parseInt(mealFat, 10) || 0,
         });
       }
+      hapticSuccess();
       close();
     } finally {
       setSaving(false);

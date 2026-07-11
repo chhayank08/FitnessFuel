@@ -149,10 +149,10 @@ const CoachPage: React.FC = () => {
           <Card className="relative overflow-hidden p-0">
             <video ref={session.videoRef} className="w-full -scale-x-100" playsInline muted />
             <canvas ref={session.canvasRef} className="absolute inset-0 h-full w-full -scale-x-100" />
-            <div className="absolute left-4 top-4">
+            <div className="absolute left-4" style={{ top: 'max(1rem, env(safe-area-inset-top))' }}>
               <Badge tone="primary" className="px-3 py-1 text-sm capitalize">{session.phase}</Badge>
             </div>
-            <div className="absolute bottom-4 right-4">
+            <div className="absolute right-4" style={{ bottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
               <Button variant="danger" onClick={handleStop}>
                 <Square className="mr-1.5 h-4 w-4" />
                 End session

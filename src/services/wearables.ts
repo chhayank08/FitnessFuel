@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { generateDemoMetrics } from '../lib/demoData';
 
-export type ProviderId = 'demo' | 'fitbit' | 'withings';
+export type ProviderId = 'demo' | 'fitbit' | 'withings' | 'google_health';
 
 export interface WearableProviderInfo {
   id: ProviderId;
@@ -23,16 +23,12 @@ export const PROVIDERS: WearableProviderInfo[] = [
     availability: 'ready',
   },
   {
-    id: 'fitbit',
-    name: 'Fitbit',
-    description: 'Steps, workouts, heart rate, sleep stages, and active-zone minutes from Fitbit devices.',
-    metrics: ['Steps', 'Distance', 'Sleep', 'Heart rate', 'Calories'],
-    availability: 'needs-setup',
-    setupSteps: [
-      'Register an app at dev.fitbit.com (OAuth 2.0, redirect to this domain)',
-      'Add FITBIT_CLIENT_ID and FITBIT_CLIENT_SECRET to Supabase Edge Function secrets',
-      'Deploy the token-exchange Edge Function, then this card becomes connectable',
-    ],
+    id: 'google_health',
+    name: 'Fitbit (via Google Health)',
+    description:
+      'Steps, heart rate, sleep, and activity from Fitbit devices — synced through the new Google Health API, which is replacing the legacy Fitbit Web API in September 2026.',
+    metrics: ['Steps', 'Sleep', 'Heart rate', 'Activity'],
+    availability: 'ready',
   },
   {
     id: 'withings',

@@ -2,14 +2,16 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { Toaster } from 'react-hot-toast';
+import { useTheme } from './hooks/useTheme';
+import { useServiceWorkerUpdate } from './lib/pwa';
 import LandingPage from './pages/LandingPage';
 import DashboardLayout from './pages/dashboard/DashboardLayout';
 import DashboardHome from './pages/dashboard/DashboardHome';
+import OnboardingPage from './pages/dashboard/OnboardingPage';
 import ProfilePage from './pages/dashboard/ProfilePage';
 import DietPage from './pages/dashboard/DietPage';
 import ExercisePage from './pages/dashboard/ExercisePage';
 import ProgressPage from './pages/dashboard/ProgressPage';
-import SchedulePage from './pages/dashboard/SchedulePage';
 import SettingsPage from './pages/dashboard/SettingsPage';
 
 const CoachPage = lazy(() => import('./pages/dashboard/CoachPage'));
@@ -23,6 +25,9 @@ const LazyFallback = (
 );
 
 function App() {
+  useTheme();
+  useServiceWorkerUpdate();
+
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
@@ -54,15 +59,17 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<DashboardHome />} />
+            <Route path="welcome" element={<OnboardingPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="diet" element={<DietPage />} />
             <Route path="exercise" element={<ExercisePage />} />
-            <Route path="progress" element={<ProgressPage />} />
-            <Route path="schedule" element={<SchedulePage />} />
             <Route
-              path="coach"
+              path="exercise/coach"
               element={<Suspense fallback={LazyFallback}><CoachPage /></Suspense>}
             />
+            <Route path="progress" element={<ProgressPage />} />
+            <Route path="coach" element={<Navigate to="/dashboard/exercise/coach" replace />} />
+            <Route path="schedule" element={<Navigate to="/dashboard/diet" replace />} />
             <Route
               path="learn"
               element={<Suspense fallback={LazyFallback}><LearnPage /></Suspense>}
