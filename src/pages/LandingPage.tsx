@@ -12,6 +12,7 @@ type Testimonial = {
   name: string;
   role: string;
   content: string;
+  image: string;
 };
 
 const FEATURES = [
@@ -19,21 +20,29 @@ const FEATURES = [
     title: 'Personalized nutrition, built around you',
     description: 'Calorie and macro targets computed from your body and goal — plus a real food database and barcode scanner.',
     icon: Utensils,
+    image:
+      'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=800&q=80',
   },
   {
     title: 'Training that adapts to your goal',
     description: 'A weekly workout plan and full exercise library, tailored to weight loss, muscle gain, or maintenance.',
     icon: Dumbbell,
+    image:
+      'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80',
   },
   {
     title: 'Live form feedback from your webcam',
     description: 'The Form Coach counts reps and scores your form in real time — no extra hardware required.',
     icon: ScanFace,
+    image:
+      'https://images.unsplash.com/photo-1517963879433-6ad2b056d712?auto=format&fit=crop&w=800&q=80',
   },
   {
     title: 'Insights, not just data',
     description: 'A composite health score, trend charts, and daily nudges that turn your logs into something useful.',
     icon: BarChart,
+    image:
+      'https://images.unsplash.com/photo-1576678927484-cc907957088c?auto=format&fit=crop&w=800&q=80',
   },
 ];
 
@@ -43,18 +52,24 @@ const TESTIMONIALS: Testimonial[] = [
     name: 'Sarah J.',
     role: 'Lost 30 lbs in 6 months',
     content: 'Fitness Fuel completely transformed my approach to health. The personalized meal plans and workout routines made it easy to stay consistent and see real results.',
+    image:
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
   },
   {
     id: 2,
     name: 'Michael C.',
     role: 'Gained 15 lbs of muscle',
     content: 'As someone who struggled to gain weight, the nutrition guidance was a game-changer. The app helped me track my progress and stay motivated.',
+    image:
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
   },
   {
     id: 3,
     name: 'Emily R.',
     role: 'Marathon runner',
     content: 'The training plans helped me prepare for my first marathon. The nutrition tips and recovery strategies were essential to my success.',
+    image:
+      'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=200&q=80',
   },
 ];
 
@@ -184,27 +199,71 @@ const LandingPage: React.FC = () => {
 
       <main>
         {/* Hero */}
-        <section className="py-20 sm:py-28">
+        <section className="relative overflow-hidden py-20 sm:py-28">
+          <div
+            className="pointer-events-none absolute -left-32 top-0 h-96 w-96 rounded-full bg-primary-500/20 blur-3xl"
+            aria-hidden="true"
+          />
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-3xl text-center">
-              <h1 className="font-display text-4xl font-semibold leading-tight sm:text-5xl">
-                Your health, understood — not just tracked
-              </h1>
-              <p className="mt-6 text-lg text-gray-400">
-                Fitness Fuel turns your nutrition, training, and recovery into one clear plan — with live form
-                feedback and insights that actually tell you what to do next.
-              </p>
-              <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <Button size="md" className="px-8 py-3" onClick={() => openAuthModal('signUp')}>
-                  Get started free
-                </Button>
-                <button
-                  onClick={scrollToFeatures}
-                  className="group flex items-center justify-center gap-2 rounded-xl border border-surface-line-strong px-6 py-3 text-sm font-medium text-gray-300 transition-colors hover:border-primary-400/50 hover:text-white"
-                >
-                  See how it works
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </button>
+            <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
+              <div>
+                <h1 className="font-display text-4xl font-semibold leading-tight sm:text-5xl">
+                  Your health, understood — not just tracked
+                </h1>
+                <p className="mt-6 text-lg text-gray-400">
+                  Fitness Fuel turns your nutrition, training, and recovery into one clear plan — with live form
+                  feedback and insights that actually tell you what to do next.
+                </p>
+
+                <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div>
+                    <h3 className="text-base font-semibold text-white">Health improvement</h3>
+                    <p className="mt-1.5 text-sm text-gray-400">
+                      Boost your overall health with customized nutrition and fitness recommendations.
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-white">Meal planning</h3>
+                    <p className="mt-1.5 text-sm text-gray-400">
+                      Easily plan your meals with an intuitive, personalized interface.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+                  <Button size="md" className="px-8 py-3" onClick={() => openAuthModal('signUp')}>
+                    Get started free
+                  </Button>
+                  <button
+                    onClick={scrollToFeatures}
+                    className="group flex items-center justify-center gap-2 rounded-xl border border-surface-line-strong px-6 py-3 text-sm font-medium text-gray-300 transition-colors hover:border-primary-400/50 hover:text-white"
+                  >
+                    See how it works
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="relative hidden lg:block">
+                <div
+                  className="pointer-events-none absolute -inset-4 rounded-[2rem] bg-primary-gradient opacity-30 blur-2xl"
+                  aria-hidden="true"
+                />
+                <img
+                  src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1000&q=80"
+                  alt="Fitness tracking and meal planning"
+                  loading="lazy"
+                  className="relative rounded-2xl border border-surface-line-strong shadow-elevation-3"
+                />
+                <div className="absolute -bottom-6 -left-6 flex items-center gap-3 rounded-2xl border border-surface-line-strong bg-surface-2/95 p-4 shadow-card backdrop-blur-xl">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success-500/15 text-success-400">
+                    <BarChart className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">Health Score 87</p>
+                    <p className="text-xs text-gray-400">Trending up this week</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -220,12 +279,22 @@ const LandingPage: React.FC = () => {
 
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {FEATURES.map((feature) => (
-                <div key={feature.title} className="card-glass p-6">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-500/15 text-primary-300">
-                    <feature.icon className="h-5 w-5" />
+                <div key={feature.title} className="card-glass overflow-hidden">
+                  <div className="h-36 overflow-hidden">
+                    <img
+                      src={feature.image}
+                      alt={feature.title}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                    />
                   </div>
-                  <h3 className="mt-4 text-base font-semibold text-white">{feature.title}</h3>
-                  <p className="mt-2 text-sm text-gray-400">{feature.description}</p>
+                  <div className="p-6">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-500/15 text-primary-300">
+                      <feature.icon className="h-5 w-5" />
+                    </div>
+                    <h3 className="mt-4 text-base font-semibold text-white">{feature.title}</h3>
+                    <p className="mt-2 text-sm text-gray-400">{feature.description}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -244,9 +313,12 @@ const LandingPage: React.FC = () => {
                 <div key={t.id} className="card-glass p-6">
                   <p className="text-sm text-gray-300">&ldquo;{t.content}&rdquo;</p>
                   <div className="mt-5 flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-gradient text-sm font-semibold text-white">
-                      {t.name.charAt(0)}
-                    </div>
+                    <img
+                      src={t.image}
+                      alt={t.name}
+                      loading="lazy"
+                      className="h-10 w-10 rounded-full border border-surface-line-strong object-cover"
+                    />
                     <div>
                       <p className="text-sm font-medium text-white">{t.name}</p>
                       <p className="text-xs text-primary-300">{t.role}</p>
