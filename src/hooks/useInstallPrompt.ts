@@ -16,8 +16,11 @@ function isIOSSafari(): boolean {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent;
   const isIOS = /iphone|ipad|ipod/i.test(ua) && !('MSStream' in window);
-  const isChromeOnIOS = /CriOS/i.test(ua);
-  return isIOS && !isChromeOnIOS;
+  // Other WebKit-based browsers on iOS (Chrome, Firefox, Edge) all share
+  // Safari's underlying engine but have a different share-sheet flow — only
+  // real Safari gets the "Tap Share, then Add to Home Screen" instructions.
+  const isOtherIOSBrowser = /CriOS|FxiOS|EdgiOS/i.test(ua);
+  return isIOS && !isOtherIOSBrowser;
 }
 
 // Wraps the beforeinstallprompt lifecycle (Android/desktop Chrome/Edge) and

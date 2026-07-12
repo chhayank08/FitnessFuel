@@ -6,13 +6,14 @@ import { useAuth } from '../../context/AuthContext';
 import { DailyLogProvider, useDailyLogContext } from '../../context/DailyLogContext';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { useLastRoute } from '../../hooks/useLastRoute';
+import { useReminderScheduler } from '../../hooks/useReminderScheduler';
 import Sidebar from '../../components/dashboard/Sidebar';
 import BottomTabBar from '../../components/dashboard/BottomTabBar';
 import DashboardHeader from '../../components/dashboard/DashboardHeader';
 import CommandPalette from '../../components/dashboard/CommandPalette';
 import QuickAddModal from '../../components/dashboard/QuickAddModal';
 import SmartActionButton from '../../components/dashboard/SmartActionButton';
-import InstallPrompt from '../../components/InstallPrompt';
+import InstallPopup from '../../components/InstallPopup';
 import { TourProvider } from '../../components/onboarding/TourContext';
 import Spotlight from '../../components/onboarding/Spotlight';
 import PageTransition from '../../components/PageTransition';
@@ -33,6 +34,7 @@ const DashboardLayout: React.FC = () => {
   const isOnline = useOnlineStatus();
   const location = useLocation();
   useLastRoute();
+  useReminderScheduler();
   // Hide the FAB during coach/workout sessions — it would overlap the controls.
   const showFab =
     !location.pathname.startsWith('/dashboard/exercise/coach') &&
@@ -85,7 +87,7 @@ const DashboardLayout: React.FC = () => {
         {showFab && <SmartActionButton variant="fab" />}
         <CommandPalette />
         <QuickAddModal />
-        <InstallPrompt />
+        <InstallPopup />
         <Spotlight />
       </div>
       </TourProvider>

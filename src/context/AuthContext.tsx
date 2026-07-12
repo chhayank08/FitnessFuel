@@ -6,6 +6,11 @@ type AuthContextType = {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  // True only right after a real sign-in (SIGNED_IN event) — false on
+  // page-refresh session restore or token refresh. Consumers (e.g. the
+  // install popup) should treat this as a one-shot signal and not gate
+  // ongoing UI on it; it self-clears shortly after being set.
+  justLoggedIn: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<boolean>;
   signIn: (email: string, password: string) => Promise<boolean>;
   signInWithGoogle: () => Promise<void>;
@@ -15,11 +20,14 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const JUST_LOGGED_IN_TTL_MS = 5000;
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [justLoggedIn, setJustLoggedIn] = useState(false);
 
   useEffect(() => {
     // Get initial session
@@ -30,10 +38,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      if (event === 'SIGNED_IN') {
+        setJustLoggedIn(true);
+        setTimeout(() => setJustLoggedIn(false), JUST_LOGGED_IN_TTL_MS);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -99,7 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, loading, signUp, signIn, signInWithGoogle, signOut, error }}>
+    <AuthContext.Provider value={{ session, user, loading, justLoggedIn, signUp, signIn, signInWithGoogle, signOut, error }}>
       {children}
     </AuthContext.Provider>
   );

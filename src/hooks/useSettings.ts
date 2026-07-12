@@ -20,6 +20,18 @@ export interface AppSettings {
   units: {
     weight: 'kg' | 'lbs';
   };
+  // Local, client-scheduled reminder times. These only fire while the app is
+  // open or recently backgrounded — see reminderScheduler.ts.
+  reminders: {
+    workoutEnabled: boolean;
+    workoutTime: string; // "HH:MM" 24h, local time
+    waterEnabled: boolean;
+    waterIntervalHours: number;
+    waterStart: string; // "HH:MM"
+    waterEnd: string; // "HH:MM"
+    mealEnabled: boolean;
+    mealTimes: string[]; // "HH:MM"[]
+  };
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -27,6 +39,16 @@ export const DEFAULT_SETTINGS: AppSettings = {
   privacy: { publicProfile: false, shareProgress: false },
   coach: { voiceFeedback: true },
   units: { weight: 'kg' },
+  reminders: {
+    workoutEnabled: false,
+    workoutTime: '18:00',
+    waterEnabled: false,
+    waterIntervalHours: 2,
+    waterStart: '08:00',
+    waterEnd: '21:00',
+    mealEnabled: false,
+    mealTimes: ['08:00', '13:00', '19:00'],
+  },
 };
 
 function mergeSettings(stored: unknown): AppSettings {
@@ -36,6 +58,7 @@ function mergeSettings(stored: unknown): AppSettings {
     privacy: { ...DEFAULT_SETTINGS.privacy, ...s.privacy },
     coach: { ...DEFAULT_SETTINGS.coach, ...s.coach },
     units: { ...DEFAULT_SETTINGS.units, ...s.units },
+    reminders: { ...DEFAULT_SETTINGS.reminders, ...s.reminders },
   };
 }
 
@@ -71,6 +94,7 @@ export function useSettings() {
           privacy: { ...prev.privacy, ...patch.privacy },
           coach: { ...prev.coach, ...patch.coach },
           units: { ...prev.units, ...patch.units },
+          reminders: { ...prev.reminders, ...patch.reminders },
         };
         if (user) {
           clearTimeout(saveTimer.current);

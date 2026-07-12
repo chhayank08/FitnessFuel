@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, useReducedMotion, Variants } from 'framer-motion';
-import { Download, Trash2, AlertTriangle, Moon, Sun, RefreshCcw } from 'lucide-react';
+import { Download, Trash2, AlertTriangle, Moon, Sun, RefreshCcw, BellRing } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -8,6 +8,8 @@ import { useSettings } from '../../hooks/useSettings';
 import { useThemeContext } from '../../context/ThemeContext';
 import { useTour } from '../../components/onboarding/TourContext';
 import { TOUR_STORAGE_KEY } from '../../components/onboarding/tourSteps';
+import { getNotificationSupport, getPermission, requestNotificationPermission } from '../../lib/notificationPermission';
+import { usePushSubscription } from '../../hooks/usePushSubscription';
 import Card from '../../components/ui/Card';
 import Toggle from '../../components/ui/Toggle';
 import Button from '../../components/ui/Button';
@@ -51,6 +53,82 @@ const SettingsPage: React.FC = () => {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmText, setConfirmText] = useState('');
+
+  const notificationSupport = getNotificationSupport();
+  const permission = getPermission();
+  const push = usePushSubscription();
+  const [sendingTest, setSendingTest] = useState(false);
+
+  const togglePush = async () => {
+    if (push.isSubscribed) {
+      await push.unsubscribe();
+      return;
+    }
+    if (notificationSupport !== 'supported') {
+      toast.error(
+        notificationSupport === 'ios-not-installed'
+          ? 'Add FitnessFuel to your Home Screen first — Safari can\'t send notifications from a browser tab.'
+          : "This browser doesn't support notifications."
+      );
+      return;
+    }
+    if (permission === 'denied') {
+      toast.error('Notifications are blocked for this site — enable them in your browser settings.');
+      return;
+    }
+    if (permission === 'default') {
+      const result = await requestNotificationPermission();
+      if (result !== 'granted') {
+        toast.error('Notifications permission was not granted.');
+        return;
+      }
+    }
+    const ok = await push.subscribe();
+    if (ok) toast.success('Push notifications enabled on this device');
+    else toast.error('Could not enable push notifications');
+  };
+
+  const sendTestPush = async () => {
+    setSendingTest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-push', { body: { action: 'send-test' } });
+      if (error || !data?.ok) {
+        toast.error((data?.error as string) || 'Test push failed to send');
+      } else {
+        toast.success(`Test push sent (${data.sent}/${data.total})`);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Test push failed to send');
+    } finally {
+      setSendingTest(false);
+    }
+  };
+
+  // Must run synchronously inside the click that flips a reminder toggle on
+  // — Safari silently drops the permission prompt if there's an await first.
+  const enableReminder = async (patch: Partial<typeof settings.reminders>) => {
+    if (notificationSupport !== 'supported') {
+      toast.error(
+        notificationSupport === 'ios-not-installed'
+          ? 'Add FitnessFuel to your Home Screen first — Safari can\'t send notifications from a browser tab.'
+          : "This browser doesn't support notifications."
+      );
+      return;
+    }
+    if (permission === 'denied') {
+      toast.error('Notifications are blocked for this site — enable them in your browser settings.');
+      return;
+    }
+    if (permission === 'default') {
+      const result = await requestNotificationPermission();
+      if (result !== 'granted') {
+        toast.error('Notifications permission was not granted.');
+        return;
+      }
+    }
+    update({ reminders: { ...settings.reminders, ...patch } });
+  };
 
   const exportData = async () => {
     if (!user) return;
@@ -155,6 +233,113 @@ const SettingsPage: React.FC = () => {
             <SettingRow title="Push notifications" description="Notifications on this device" checked={settings.notifications.push} onChange={(v) => update({ notifications: { ...settings.notifications, push: v } })} />
             <SettingRow title="Workout reminders" description="Get reminded about scheduled workouts" checked={settings.notifications.workoutReminders} onChange={(v) => update({ notifications: { ...settings.notifications, workoutReminders: v } })} />
             <SettingRow title="Product updates" description="News about new features" checked={settings.notifications.productUpdates} onChange={(v) => update({ notifications: { ...settings.notifications, productUpdates: v } })} />
+          </div>
+        </Card>
+      </motion.div>
+
+      <motion.div variants={item} className="mb-5">
+        <Card className="p-6">
+          <div className="flex items-center gap-2">
+            <BellRing className="h-4 w-4 text-primary-300" />
+            <h2 className="text-base font-semibold text-ink">Reminders</h2>
+          </div>
+          <p className="mt-1 text-xs text-ink-muted">
+            Local reminders while FitnessFuel is open or recently backgrounded.
+            {notificationSupport === 'ios-not-installed' && ' Add to your Home Screen to enable these on iPhone.'}
+          </p>
+          <div className="mt-2 divide-y divide-surface-line">
+            <div className="py-3">
+              <SettingRow
+                title="Push notifications on this device"
+                description="Reach you even when FitnessFuel is fully closed"
+                checked={push.isSubscribed}
+                onChange={togglePush}
+              />
+              {push.isSubscribed && (
+                <Button variant="subtle" size="sm" className="mt-2" loading={sendingTest} onClick={sendTestPush}>
+                  Send test notification
+                </Button>
+              )}
+            </div>
+            <div className="py-3">
+              <SettingRow
+                title="Workout reminder"
+                description="A daily nudge at your chosen time"
+                checked={settings.reminders.workoutEnabled}
+                onChange={(v) => (v ? enableReminder({ workoutEnabled: true }) : update({ reminders: { ...settings.reminders, workoutEnabled: false } }))}
+              />
+              {settings.reminders.workoutEnabled && (
+                <input
+                  type="time"
+                  value={settings.reminders.workoutTime}
+                  onChange={(e) => update({ reminders: { ...settings.reminders, workoutTime: e.target.value } })}
+                  className="mt-1 rounded-lg border border-surface-line-strong bg-surface-2 px-3 py-1.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              )}
+            </div>
+
+            <div className="py-3">
+              <SettingRow
+                title="Water reminders"
+                description="Repeats through the day within a time window"
+                checked={settings.reminders.waterEnabled}
+                onChange={(v) => (v ? enableReminder({ waterEnabled: true }) : update({ reminders: { ...settings.reminders, waterEnabled: false } }))}
+              />
+              {settings.reminders.waterEnabled && (
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-ink-muted">
+                  Every
+                  <select
+                    value={settings.reminders.waterIntervalHours}
+                    onChange={(e) => update({ reminders: { ...settings.reminders, waterIntervalHours: Number(e.target.value) } })}
+                    className="rounded-lg border border-surface-line-strong bg-surface-2 px-2 py-1.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    {[1, 2, 3, 4].map((h) => (
+                      <option key={h} value={h}>{h}h</option>
+                    ))}
+                  </select>
+                  between
+                  <input
+                    type="time"
+                    value={settings.reminders.waterStart}
+                    onChange={(e) => update({ reminders: { ...settings.reminders, waterStart: e.target.value } })}
+                    className="rounded-lg border border-surface-line-strong bg-surface-2 px-2.5 py-1.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                  and
+                  <input
+                    type="time"
+                    value={settings.reminders.waterEnd}
+                    onChange={(e) => update({ reminders: { ...settings.reminders, waterEnd: e.target.value } })}
+                    className="rounded-lg border border-surface-line-strong bg-surface-2 px-2.5 py-1.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="py-3">
+              <SettingRow
+                title="Meal reminders"
+                description="Three fixed times to log breakfast, lunch, and dinner"
+                checked={settings.reminders.mealEnabled}
+                onChange={(v) => (v ? enableReminder({ mealEnabled: true }) : update({ reminders: { ...settings.reminders, mealEnabled: false } }))}
+              />
+              {settings.reminders.mealEnabled && (
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {settings.reminders.mealTimes.map((t, i) => (
+                    <input
+                      key={i}
+                      type="time"
+                      value={t}
+                      onChange={(e) => {
+                        const mealTimes = [...settings.reminders.mealTimes];
+                        mealTimes[i] = e.target.value;
+                        update({ reminders: { ...settings.reminders, mealTimes } });
+                      }}
+                      className="rounded-lg border border-surface-line-strong bg-surface-2 px-2.5 py-1.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </Card>
       </motion.div>
