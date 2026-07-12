@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, useScroll, useMotionValueEvent, useReducedMotion } from 'framer-motion';
 import { Search, Dumbbell } from 'lucide-react';
@@ -21,8 +21,30 @@ const DashboardHeader: React.FC = () => {
   const [condensed, setCondensed] = useState(false);
   useMotionValueEvent(scrollY, 'change', (y) => setCondensed(y > 24));
 
+  // Publish the real header height (incl. env(safe-area-inset-top) padding in
+  // standalone PWAs) as --app-header-h so the layout clears it exactly. Only
+  // the expanded height is published — the scroll-condense animation must not
+  // shift page content.
+  const headerRef = useRef<HTMLElement>(null);
+  const condensedRef = useRef(condensed);
+  condensedRef.current = condensed;
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const publish = () => {
+      if (condensedRef.current) return;
+      document.documentElement.style.setProperty('--app-header-h', `${el.getBoundingClientRect().height}px`);
+    };
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    // Fonts can change the measured height after first paint.
+    document.fonts?.ready.then(publish).catch(() => {});
+    return () => ro.disconnect();
+  }, []);
+
   return (
-    <header className="fixed inset-x-0 top-0 z-40" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+    <header ref={headerRef} className="fixed inset-x-0 top-0 z-40" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <motion.div
         className="mx-3 mt-2 rounded-2xl border bg-surface-base/70 shadow-elevation-2 backdrop-blur-xl sm:mx-4"
         style={{ borderColor: 'rgb(var(--surface-line-rgb) / var(--surface-line-strong-alpha))' }}

@@ -10,10 +10,19 @@ export interface Streak {
   loading: boolean;
 }
 
-// A day counts as active when the user checked off any plan item or logged water.
+// A day counts as active when the user checked off any plan item, logged
+// water, or recorded ANY workout session (quick, coach, or plan-driven).
 export function useStreak(refreshKey?: unknown): Streak {
   const { user } = useAuth();
   const [state, setState] = useState<Streak>({ current: 0, last7: Array(7).fill(false), loading: true });
+  const [sessionBump, setSessionBump] = useState(0);
+
+  // Refetch whenever any workout session is saved anywhere in the app.
+  useEffect(() => {
+    const onSaved = () => setSessionBump((n) => n + 1);
+    window.addEventListener('ff-workout-saved', onSaved);
+    return () => window.removeEventListener('ff-workout-saved', onSaved);
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -23,9 +32,10 @@ export function useStreak(refreshKey?: unknown): Streak {
     let cancelled = false;
     (async () => {
       const since = localDateString(daysAgo(60));
-      const [completionsRes, waterRes] = await Promise.all([
+      const [completionsRes, waterRes, sessionsRes] = await Promise.all([
         supabase.from('plan_completions').select('log_date').eq('user_id', user.id).gte('log_date', since),
         supabase.from('daily_logs').select('log_date, water_ml').eq('user_id', user.id).gte('log_date', since),
+        supabase.from('workout_sessions').select('log_date').eq('user_id', user.id).gte('log_date', since),
       ]);
       if (cancelled) return;
 
@@ -34,6 +44,14 @@ export function useStreak(refreshKey?: unknown): Streak {
       (waterRes.data || []).forEach((r) => {
         if (r.water_ml > 0) activeDates.add(r.log_date);
       });
+      // Tolerate a not-yet-applied migration (missing table/column).
+      if (!sessionsRes.error) {
+        (sessionsRes.data || []).forEach((r) => {
+          if (r.log_date) activeDates.add(r.log_date);
+        });
+      } else if (sessionsRes.error.code !== '42P01' && sessionsRes.error.code !== '42703') {
+        console.error('Error fetching workout sessions for streak:', sessionsRes.error);
+      }
 
       // Consecutive active days ending today (or yesterday, so the streak
       // isn't shown as broken before the user logs anything today).
@@ -50,7 +68,7 @@ export function useStreak(refreshKey?: unknown): Streak {
     return () => {
       cancelled = true;
     };
-  }, [user, refreshKey]);
+  }, [user, refreshKey, sessionBump]);
 
   return state;
 }

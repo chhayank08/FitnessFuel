@@ -13,6 +13,11 @@ import { EXERCISES, ExerciseKey } from '../../lib/poseAnalysis';
 import { usePoseSession } from '../../hooks/usePoseSession';
 import { useWorkoutSessions } from '../../hooks/useWorkoutSessions';
 import { useSettings } from '../../hooks/useSettings';
+import { useDailyLogContext } from '../../context/DailyLogContext';
+import { EXERCISE_CATALOG, estimateCalories } from '../../lib/exerciseCatalog';
+import { preloadPoseLandmarker } from '../../lib/poseLandmarker';
+import { voice } from '../../lib/voice';
+import { localDateString } from '../../lib/dates';
 
 const container: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const item: Variants = {
@@ -22,12 +27,9 @@ const item: Variants = {
 
 const EXERCISE_LIST = Object.values(EXERCISES);
 
-function speak(text: string) {
-  if (typeof window === 'undefined' || !window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.rate = 1.05;
-  window.speechSynthesis.speak(utter);
+function metFor(exerciseKey: string): number {
+  const entry = Object.values(EXERCISE_CATALOG).find((e) => e.poseKey === exerciseKey);
+  return entry?.met ?? 4.0;
 }
 
 const CoachPage: React.FC = () => {
@@ -36,10 +38,11 @@ const CoachPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { settings, update } = useSettings();
   const { saveSession } = useWorkoutSessions();
+  const { insights } = useDailyLogContext();
+  const weightKg = insights.nutritionProfile?.weight ?? 70;
   const paramExercise = searchParams.get('exercise');
-  const [exerciseKey, setExerciseKey] = useState<ExerciseKey>(
-    paramExercise && paramExercise in EXERCISES ? (paramExercise as ExerciseKey) : 'squat'
-  );
+  const validParam = paramExercise != null && paramExercise in EXERCISES;
+  const [exerciseKey, setExerciseKey] = useState<ExerciseKey>(validParam ? (paramExercise as ExerciseKey) : 'squat');
   const [reportSaved, setReportSaved] = useState(false);
   const session = usePoseSession(exerciseKey);
   const lastAnnouncedRep = useRef(0);
@@ -47,8 +50,15 @@ const CoachPage: React.FC = () => {
 
   const voiceOn = settings.coach.voiceFeedback;
 
-  // ?autostart=1 launches the session immediately (dashboard "Start Workout" CTA).
-  // Clear the param so refresh/back doesn't re-trigger; StrictMode guard via ref.
+  // Warm the pose model while the user reads the setup card.
+  useEffect(() => {
+    preloadPoseLandmarker();
+  }, []);
+
+  // ?autostart=1 launches the session immediately — but ONLY when a valid
+  // exercise was requested. Without one, land on the picker: never silently
+  // default into a squat session. Clear the param so refresh/back doesn't
+  // re-trigger; StrictMode guard via ref.
   useEffect(() => {
     if (searchParams.get('autostart') !== '1' || autoStarted.current) return;
     autoStarted.current = true;
@@ -57,7 +67,7 @@ const CoachPage: React.FC = () => {
       next.delete('autostart');
       return next;
     }, { replace: true });
-    session.start();
+    if (validParam) session.start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -67,7 +77,7 @@ const CoachPage: React.FC = () => {
       lastAnnouncedRep.current = session.reps.length;
       const rep = session.reps[session.reps.length - 1];
       const text = rep.cue ? `${session.reps.length}. ${rep.cue}` : `${session.reps.length}`;
-      speak(text);
+      voice.speak(text, { interrupt: true });
     }
   }, [session.reps, session.status, voiceOn]);
 
@@ -77,7 +87,9 @@ const CoachPage: React.FC = () => {
 
   const handleStop = useCallback(async () => {
     session.stop();
+    voice.stop();
     if (session.reps.length === 0) return;
+    const minutes = session.elapsedSeconds / 60;
     const ok = await saveSession({
       exercise_key: exerciseKey,
       duration_seconds: session.elapsedSeconds,
@@ -85,10 +97,13 @@ const CoachPage: React.FC = () => {
       avg_form_score: session.avgScore,
       rep_scores: session.reps.map((r) => r.score),
       feedback: session.reps.map((r) => r.cue).filter(Boolean),
+      source: 'coach',
+      calories: estimateCalories(metFor(exerciseKey), weightKg, minutes),
+      log_date: localDateString(),
     });
     setReportSaved(ok);
     if (ok) toast.success('Session saved to your training history');
-  }, [session, exerciseKey, saveSession]);
+  }, [session, exerciseKey, saveSession, weightKg]);
 
   const config = EXERCISES[exerciseKey];
 
@@ -133,7 +148,15 @@ const CoachPage: React.FC = () => {
                 Voice {voiceOn ? 'on' : 'off'}
               </button>
             </div>
-            <Button className="mt-4 w-full" onClick={session.start}>
+            <Button
+              className="mt-4 w-full"
+              onClick={() => {
+                // User gesture: unlock speech synthesis for mobile PWAs before
+                // any programmatic speak() calls.
+                voice.unlock();
+                session.start();
+              }}
+            >
               <Camera className="mr-1.5 h-4 w-4" />
               Start session
             </Button>

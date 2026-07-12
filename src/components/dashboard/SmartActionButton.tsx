@@ -49,7 +49,7 @@ const SmartActionButton: React.FC<SmartActionButtonProps> = ({ variant }) => {
 
   const actions: Action[] = [
     { key: 'barcode', label: 'Scan barcode', icon: ScanBarcode, run: () => navigate('/dashboard/diet?tab=search&scan=1') },
-    { key: 'workout', label: 'Quick workout', icon: ScanFace, run: () => navigate('/dashboard/exercise/coach?autostart=1') },
+    { key: 'workout', label: 'Quick workout', icon: ScanFace, run: () => navigate('/dashboard/exercise/workout') },
     { key: 'water', label: 'Log water', icon: Droplets, run: () => quickAdd.openWith('water') },
     { key: 'weight', label: 'Log weight', icon: Weight, run: () => quickAdd.openWith('weight') },
     { key: 'meal', label: 'Custom meal', icon: UtensilsCrossed, run: () => quickAdd.openWith('meal') },

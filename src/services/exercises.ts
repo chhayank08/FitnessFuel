@@ -19,7 +19,11 @@ const FREE_DB_BASE = 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main'
 let inFlight: Promise<ExerciseInfo[]> | null = null;
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-function normalizeExerciseDb(e: any): ExerciseInfo {
+function normalizeExerciseDb(e: any, rapidKey: string): ExerciseInfo {
+  // Current ExerciseDB plans no longer inline a gifUrl in the list response —
+  // GIFs come from a separate per-exercise /image endpoint (still needs the
+  // RapidAPI key, so we pass it through as a query param the <img> tag can use).
+  const mediaUrl = e.gifUrl || (e.id ? `https://exercisedb.p.rapidapi.com/image?exerciseId=${e.id}&resolution=180&rapidapi-key=${rapidKey}` : null);
   return {
     id: `edb-${e.id}`,
     name: e.name,
@@ -27,8 +31,8 @@ function normalizeExerciseDb(e: any): ExerciseInfo {
     target: e.target || '',
     secondaryMuscles: e.secondaryMuscles || [],
     equipment: e.equipment || 'body weight',
-    mediaUrl: e.gifUrl || null,
-    mediaType: e.gifUrl ? 'gif' : null,
+    mediaUrl,
+    mediaType: mediaUrl ? 'gif' : null,
     instructions: e.instructions || [],
     level: null,
   };
@@ -59,7 +63,7 @@ async function fetchFromExerciseDb(key: string): Promise<ExerciseInfo[]> {
   });
   if (!res.ok) throw new Error(`ExerciseDB ${res.status}`);
   const data = await res.json();
-  return (data as unknown[]).map(normalizeExerciseDb);
+  return (data as unknown[]).map((e) => normalizeExerciseDb(e, key));
 }
 
 async function fetchFromFreeDb(): Promise<ExerciseInfo[]> {

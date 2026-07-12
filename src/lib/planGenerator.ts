@@ -1,4 +1,8 @@
 import { NutritionProfile, calculateTargets, toNutritionProfile } from './nutrition';
+import { getRecipe } from './recipeCatalog';
+// planGenerator ⇄ workoutPlanGenerator import cycle is safe: both sides only
+// touch the other module inside function bodies, never at module init.
+import { generateWeeklyWorkoutPlan } from './workoutPlanGenerator';
 
 export interface Meal {
   name: string;
@@ -6,6 +10,7 @@ export interface Meal {
   protein: number;
   carbs: number;
   fat: number;
+  image: string;
   ingredients: string[];
   instructions: string[];
 }
@@ -58,93 +63,23 @@ const MEAL_NAMES: Record<string, Record<string, string[]>> = {
   },
 };
 
-const INGREDIENTS: Record<string, Record<string, string[]>> = {
-  breakfast: {
-    weight_loss: ['Egg whites', 'Spinach', 'Berries', 'Greek yogurt', 'Oats', 'Almond milk'],
-    weight_gain: ['Whole eggs', 'Avocado', 'Nuts', 'Whole grain bread', 'Banana', 'Peanut butter'],
-    muscle_gain: ['Protein powder', 'Oats', 'Berries', 'Almond butter', 'Milk', 'Honey'],
-    maintain: ['Eggs', 'Vegetables', 'Whole grains', 'Fruit', 'Yogurt', 'Nuts'],
-  },
-  lunch: {
-    weight_loss: ['Lean protein', 'Mixed greens', 'Vegetables', 'Olive oil', 'Quinoa', 'Lemon'],
-    weight_gain: ['Chicken thigh', 'Brown rice', 'Avocado', 'Nuts', 'Vegetables', 'Olive oil'],
-    muscle_gain: ['Lean beef', 'Sweet potato', 'Broccoli', 'Olive oil', 'Quinoa', 'Herbs'],
-    maintain: ['Fish or chicken', 'Mixed vegetables', 'Whole grains', 'Healthy fats', 'Herbs', 'Spices'],
-  },
-  dinner: {
-    weight_loss: ['White fish', 'Steamed vegetables', 'Leafy greens', 'Herbs', 'Lemon', 'Garlic'],
-    weight_gain: ['Salmon', 'Quinoa', 'Roasted vegetables', 'Nuts', 'Olive oil', 'Herbs'],
-    muscle_gain: ['Lean steak', 'Sweet potato', 'Asparagus', 'Garlic', 'Herbs', 'Olive oil'],
-    maintain: ['Protein of choice', 'Vegetables', 'Complex carbs', 'Healthy fats', 'Seasonings', 'Herbs'],
-  },
-  snack: {
-    weight_loss: ['Apple', 'Almond butter', 'Celery', 'Hummus', 'Berries', 'Greek yogurt'],
-    weight_gain: ['Trail mix', 'Dried fruit', 'Nuts', 'Seeds', 'Granola', 'Milk'],
-    muscle_gain: ['Protein bar', 'Greek yogurt', 'Berries', 'Granola', 'Protein shake', 'Banana'],
-    maintain: ['Mixed nuts', 'Fruit', 'Yogurt', 'Vegetables', 'Hummus', 'Whole grains'],
-  },
-};
-
-const INSTRUCTIONS: Record<string, string[]> = {
-  breakfast: ['Prepare ingredients the night before for quick assembly', 'Include protein to maintain energy levels', 'Pair with water or herbal tea for hydration'],
-  lunch: ['Eat when moderately hungry, not starving', 'Balance protein, carbs, and healthy fats', 'Take time to eat mindfully'],
-  dinner: ['Eat 2-3 hours before bedtime for better digestion', 'Focus on protein and vegetables with moderate carbs', 'Keep portions appropriate for evening metabolism'],
-  snack: ['Choose when genuinely hungry between meals', 'Focus on protein or healthy fats for satiety', 'Keep portions controlled'],
-};
-
-const EXERCISE_TEMPLATES: Record<string, ExerciseItem[]> = {
-  weight_loss: [
-    { name: 'Cardio (Running)', duration: '30 min', calories_burned: 300, type: 'cardio' },
-    { name: 'HIIT Training', duration: '25 min', calories_burned: 250, type: 'hiit' },
-    { name: 'Cycling', duration: '45 min', calories_burned: 400, type: 'cardio' },
-    { name: 'Swimming', duration: '30 min', calories_burned: 350, type: 'cardio' },
-    { name: 'Strength Training', duration: '40 min', calories_burned: 200, type: 'strength' },
-    { name: 'Jump Rope', duration: '20 min', calories_burned: 220, type: 'cardio' },
-  ],
-  weight_gain: [
-    { name: 'Weight Lifting', duration: '45 min', calories_burned: 180, type: 'strength' },
-    { name: 'Compound Exercises', duration: '40 min', calories_burned: 160, type: 'strength' },
-    { name: 'Resistance Training', duration: '35 min', calories_burned: 150, type: 'strength' },
-    { name: 'Light Cardio', duration: '20 min', calories_burned: 120, type: 'cardio' },
-    { name: 'Deadlifts & Squats', duration: '45 min', calories_burned: 190, type: 'strength' },
-    { name: 'Upper Body Push', duration: '40 min', calories_burned: 160, type: 'strength' },
-  ],
-  muscle_gain: [
-    { name: 'Heavy Lifting', duration: '50 min', calories_burned: 200, type: 'strength' },
-    { name: 'Progressive Overload', duration: '45 min', calories_burned: 180, type: 'strength' },
-    { name: 'Compound Movements', duration: '40 min', calories_burned: 170, type: 'strength' },
-    { name: 'Isolation Exercises', duration: '30 min', calories_burned: 140, type: 'strength' },
-    { name: 'Pull Day', duration: '45 min', calories_burned: 175, type: 'strength' },
-    { name: 'Leg Day', duration: '50 min', calories_burned: 210, type: 'strength' },
-  ],
-  maintain: [
-    { name: 'Mixed Training', duration: '35 min', calories_burned: 220, type: 'mixed' },
-    { name: 'Moderate Cardio', duration: '30 min', calories_burned: 200, type: 'cardio' },
-    { name: 'Strength Training', duration: '40 min', calories_burned: 180, type: 'strength' },
-    { name: 'Flexibility & Yoga', duration: '25 min', calories_burned: 100, type: 'flexibility' },
-    { name: 'Bodyweight Circuit', duration: '30 min', calories_burned: 190, type: 'mixed' },
-    { name: 'Pilates', duration: '35 min', calories_burned: 150, type: 'flexibility' },
-  ],
-};
-
 function getMealName(type: string, goal: string, dayIndex: number): string {
   const names = MEAL_NAMES[type]?.[goal] || MEAL_NAMES[type]?.maintain || ['Healthy Meal'];
   return names[dayIndex % names.length];
 }
 
-function getIngredients(type: string, goal: string): string[] {
-  return INGREDIENTS[type]?.[goal] || INGREDIENTS[type]?.maintain || ['Healthy ingredients'];
-}
-
 function buildMeal(type: string, goal: string, dayIndex: number, calories: number, protein: number, carbs: number, fat: number): Meal {
+  const name = getMealName(type, goal, dayIndex);
+  const recipe = getRecipe(name, type as MealSlot);
   return {
-    name: getMealName(type, goal, dayIndex),
+    name,
     calories,
     protein,
     carbs,
     fat,
-    ingredients: getIngredients(type, goal),
-    instructions: INSTRUCTIONS[type] || ['Enjoy this healthy meal'],
+    image: recipe.image,
+    ingredients: recipe.ingredients,
+    instructions: recipe.instructions,
   };
 }
 
@@ -189,15 +124,21 @@ export function generateWeeklyMealPlan(profileRow: Parameters<typeof toNutrition
   });
 }
 
+// Thin adapter over the real generator (workoutPlanGenerator.ts) keeping the
+// legacy ExerciseItem summary shape that TodaysPlanCard, NextActionCard, and
+// the 'workout' completion key already depend on.
 export function generateWeeklyExercisePlan(profileRow: Parameters<typeof toNutritionProfile>[0]): DayExercisePlan[] {
-  const goal = toNutritionProfile(profileRow).goal;
-  const exercises = EXERCISE_TEMPLATES[goal] || EXERCISE_TEMPLATES.maintain;
-
-  return DAYS.map((day, i) => ({
-    day,
-    exercises: i === 6
+  const week = generateWeeklyWorkoutPlan(profileRow);
+  return week.map((dayPlan) => ({
+    day: dayPlan.day,
+    exercises: dayPlan.restDay
       ? [{ name: 'Rest Day', duration: 'Full day', calories_burned: 0, type: 'rest' }]
-      : [exercises[i % exercises.length]],
+      : [{
+          name: dayPlan.focus,
+          duration: `${dayPlan.totalMinutes} min`,
+          calories_burned: dayPlan.estCalories,
+          type: dayPlan.type,
+        }],
   }));
 }
 
@@ -237,5 +178,7 @@ export function getAlternativeMeal(
   const name = candidates[0] ?? pool.find((n) => n !== current.name);
   if (!name) return null;
 
-  return { ...current, name };
+  // Swap the full recipe (image/ingredients/instructions), keep today's macros.
+  const recipe = getRecipe(name, slot);
+  return { ...current, name, image: recipe.image, ingredients: recipe.ingredients, instructions: recipe.instructions };
 }

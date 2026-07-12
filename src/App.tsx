@@ -17,6 +17,7 @@ import ProgressPage from './pages/dashboard/ProgressPage';
 import SettingsPage from './pages/dashboard/SettingsPage';
 
 const CoachPage = lazy(() => import('./pages/dashboard/CoachPage'));
+const WorkoutPlayerPage = lazy(() => import('./pages/dashboard/WorkoutPlayerPage'));
 const LearnPage = lazy(() => import('./pages/dashboard/LearnPage'));
 const DevicesPage = lazy(() => import('./pages/dashboard/DevicesPage'));
 
@@ -79,6 +80,10 @@ function App() {
             <Route
               path="exercise/coach"
               element={<Suspense fallback={LazyFallback}><CoachPage /></Suspense>}
+            />
+            <Route
+              path="exercise/workout"
+              element={<Suspense fallback={LazyFallback}><WorkoutPlayerPage /></Suspense>}
             />
             <Route path="progress" element={<ProgressPage />} />
             <Route path="coach" element={<Navigate to="/dashboard/exercise/coach" replace />} />

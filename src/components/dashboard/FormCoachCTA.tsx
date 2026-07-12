@@ -33,7 +33,7 @@ const FormCoachCTA: React.FC<FormCoachCTAProps> = ({ lastSession, className = ''
         </div>
       </div>
       <button
-        onClick={() => navigate('/dashboard/exercise/coach?autostart=1')}
+        onClick={() => navigate('/dashboard/exercise/coach')}
         className="flex items-center gap-1 text-sm font-medium text-primary-300 hover:text-primary-200"
       >
         {lastSession ? 'New session' : 'Get started'}

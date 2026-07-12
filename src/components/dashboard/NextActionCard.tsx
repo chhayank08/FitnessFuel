@@ -6,20 +6,10 @@ import Badge from '../ui/Badge';
 import { TodaysPlan } from '../../lib/planGenerator';
 import { useDailyLogContext } from '../../context/DailyLogContext';
 import { hapticMedium, hapticLight } from '../../lib/haptics';
-import { ExerciseKey } from '../../lib/poseAnalysis';
 
 interface NextActionCardProps {
   plan: TodaysPlan | null;
   className?: string;
-}
-
-// Maps a plan workout to the closest Form Coach exercise so the
-// "Start Workout" CTA lands on a sensible auto-started session.
-function mapWorkoutToExercise(name: string): ExerciseKey {
-  const n = name.toLowerCase();
-  if (n.includes('push') || n.includes('upper')) return 'pushup';
-  if (n.includes('curl') || n.includes('arm')) return 'bicep-curl';
-  return 'squat';
 }
 
 // The single "what should I do right now" hero card at the top of Today.
@@ -37,7 +27,7 @@ const NextActionCard: React.FC<NextActionCardProps> = ({ plan, className = '' })
 
   if (plan?.workout && !workoutDone) {
     const workout = plan.workout;
-    const exercise = mapWorkoutToExercise(workout.name);
+    const todayIndex = (new Date().getDay() + 6) % 7;
     content = (
       <>
         <div className="flex items-center gap-2">
@@ -51,7 +41,7 @@ const NextActionCard: React.FC<NextActionCardProps> = ({ plan, className = '' })
         </div>
         <h2 className="mt-2 font-display text-2xl font-semibold text-ink sm:text-3xl">{workout.name}</h2>
         <p className="mt-1 text-sm text-ink-muted">
-          Live rep counting, posture analysis, and voice feedback from your camera.
+          Guided sets, timers, demos, and voice coaching — camera form analysis where supported.
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <Button
@@ -59,16 +49,16 @@ const NextActionCard: React.FC<NextActionCardProps> = ({ plan, className = '' })
             className="shadow-glow-primary"
             onClick={() => {
               hapticMedium();
-              navigate(`/dashboard/exercise/coach?autostart=1&exercise=${exercise}`);
+              navigate(`/dashboard/exercise/workout?day=${todayIndex}`);
             }}
           >
             <ScanFace className="mr-2 h-5 w-5" />
-            Start Workout with AI Form Coach
+            Start Today's Workout
           </Button>
           <button
             onClick={() => {
               hapticLight();
-              dailyLog.toggleCompletion('workout', 'workout');
+              dailyLog.toggleCompletion({ itemType: 'workout', itemKey: 'workout', itemName: workout.name });
             }}
             className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-ink-muted transition-colors hover:text-ink"
           >
@@ -102,7 +92,15 @@ const NextActionCard: React.FC<NextActionCardProps> = ({ plan, className = '' })
           <button
             onClick={() => {
               hapticLight();
-              dailyLog.toggleCompletion('meal', nextMeal.key);
+              dailyLog.toggleCompletion({
+                itemType: 'meal',
+                itemKey: nextMeal.key,
+                itemName: nextMeal.meal.name,
+                calories: nextMeal.meal.calories,
+                protein: nextMeal.meal.protein,
+                carbs: nextMeal.meal.carbs,
+                fat: nextMeal.meal.fat,
+              });
             }}
             className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-ink-muted transition-colors hover:text-ink"
           >

@@ -33,8 +33,10 @@ const DashboardLayout: React.FC = () => {
   const isOnline = useOnlineStatus();
   const location = useLocation();
   useLastRoute();
-  // Hide the FAB during a coach session — it would overlap the video controls.
-  const showFab = !location.pathname.startsWith('/dashboard/exercise/coach');
+  // Hide the FAB during coach/workout sessions — it would overlap the controls.
+  const showFab =
+    !location.pathname.startsWith('/dashboard/exercise/coach') &&
+    !location.pathname.startsWith('/dashboard/exercise/workout');
 
   if (loading) {
     return (
@@ -60,7 +62,8 @@ const DashboardLayout: React.FC = () => {
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-x-0 top-20 z-30 overflow-hidden md:left-64"
+              className="fixed inset-x-0 z-30 overflow-hidden md:left-64"
+              style={{ top: 'var(--app-header-h, 5rem)' }}
             >
               <div className="flex items-center justify-center gap-2 bg-warning-500/15 px-4 py-2 text-sm text-warning-400">
                 <WifiOff className="h-3.5 w-3.5" />
@@ -71,7 +74,10 @@ const DashboardLayout: React.FC = () => {
         </AnimatePresence>
         <div className="flex">
           <Sidebar />
-          <main className="ml-0 mt-20 min-h-screen flex-1 p-4 pb-[calc(4.25rem+env(safe-area-inset-bottom)+1rem)] md:ml-64 md:p-8 md:pb-8">
+          <main
+            className="ml-0 min-h-screen flex-1 p-4 pb-[calc(4.25rem+env(safe-area-inset-bottom)+1rem)] md:ml-64 md:p-8 md:pb-8"
+            style={{ paddingTop: 'calc(var(--app-header-h, 5rem) + 0.75rem)' }}
+          >
             <RefreshableOutlet />
           </main>
         </div>

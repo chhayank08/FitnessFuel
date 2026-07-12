@@ -3,14 +3,8 @@ import { RefreshCcw, RotateCcw, Check } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import Card from '../ui/Card';
 import { TodaysPlan, MealSlot } from '../../lib/planGenerator';
+import { SLOT_FALLBACK_IMAGES } from '../../lib/recipeCatalog';
 import { hapticLight } from '../../lib/haptics';
-
-export const MEAL_IMAGES: Record<string, string> = {
-  breakfast: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=600&q=80',
-  lunch: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&q=80',
-  dinner: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600&q=80',
-  snack: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600&q=80',
-};
 
 interface MealPlanTodayCardProps {
   plan: TodaysPlan | null;
@@ -57,7 +51,13 @@ const MealPlanTodayCard: React.FC<MealPlanTodayCardProps> = ({
           const done = isCompleted('meal', slot);
           return (
             <Card key={slot} className="overflow-hidden p-0">
-              <img src={MEAL_IMAGES[slot]} alt="" loading="lazy" className="h-24 w-full object-cover" />
+              <img
+                src={meal.image}
+                alt={meal.name}
+                loading="lazy"
+                className="h-24 w-full object-cover"
+                onError={(e) => { (e.target as HTMLImageElement).src = SLOT_FALLBACK_IMAGES[slot]; }}
+              />
               <div className="p-4">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium uppercase tracking-wider text-ink-faint">{slot}</p>

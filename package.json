@@ -28,6 +28,7 @@
     "@types/recharts": "^1.8.29",
     "axios": "^1.9.0",
     "axios-retry": "^4.0.0",
+    "barcode-detector": "^3.2.0",
     "chart.js": "^4.4.1",
     "cors": "^2.8.5",
     "express": "^5.1.0",

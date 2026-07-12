@@ -1,15 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { EXERCISES, ExerciseKey, Point3D, RepCounter, RepResult } from '../lib/poseAnalysis';
+import {
+  EXERCISES,
+  ExerciseKey,
+  HOLD_EXERCISES,
+  HoldTracker,
+  Point3D,
+  RepCounter,
+  RepResult,
+} from '../lib/poseAnalysis';
+import { getPoseLandmarker } from '../lib/poseLandmarker';
 import { hapticLight as hapticRep } from '../lib/haptics';
 
-export type SessionStatus = 'idle' | 'loading-model' | 'requesting-camera' | 'running' | 'ended' | 'error';
+export type SessionStatus = 'idle' | 'loading-model' | 'requesting-camera' | 'running' | 'paused' | 'ended' | 'error';
 export type SessionErrorKind = 'denied' | 'no-camera' | 'busy' | 'model' | null;
+export type PoseMode = 'reps' | 'hold';
 
 interface LiveRep extends RepResult {
   index: number;
 }
 
-export function usePoseSession(exerciseKey: ExerciseKey) {
+// Live camera pose session. `poseKey` selects a rep config (EXERCISES) in
+// 'reps' mode or a hold config (HOLD_EXERCISES) in 'hold' mode.
+export function usePoseSession(poseKey: ExerciseKey | string, mode: PoseMode = 'reps') {
   const [status, setStatus] = useState<SessionStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorKind, setErrorKind] = useState<SessionErrorKind>(null);
@@ -17,6 +29,7 @@ export function usePoseSession(exerciseKey: ExerciseKey) {
   const [reps, setReps] = useState<LiveRep[]>([]);
   const [currentCue, setCurrentCue] = useState<string | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [holdScore, setHoldScore] = useState(0);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -24,8 +37,11 @@ export function usePoseSession(exerciseKey: ExerciseKey) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const landmarkerRef = useRef<any>(null);
   const rafRef = useRef<number>();
-  const counterRef = useRef(new RepCounter(EXERCISES[exerciseKey]));
+  const counterRef = useRef<RepCounter | null>(null);
+  const holdRef = useRef<HoldTracker | null>(null);
   const startTimeRef = useRef<number>(0);
+  const pausedAccumRef = useRef(0);
+  const pausedAtRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval>>();
 
   const drawFrame = useCallback((landmarks: Point3D[] | null) => {
@@ -85,11 +101,20 @@ export function usePoseSession(exerciseKey: ExerciseKey) {
     drawFrame(landmarks);
 
     if (landmarks) {
-      const rep = counterRef.current.process(landmarks);
-      if (rep) {
-        setReps((prev) => [...prev, { ...rep, index: prev.length + 1 }]);
-        if (rep.cue) setCurrentCue(rep.cue);
-        hapticRep();
+      if (counterRef.current) {
+        const rep = counterRef.current.process(landmarks);
+        if (rep) {
+          setReps((prev) => [...prev, { ...rep, index: prev.length + 1 }]);
+          if (rep.cue) setCurrentCue(rep.cue);
+          hapticRep();
+        }
+      }
+      if (holdRef.current) {
+        const cueChange = holdRef.current.process(landmarks);
+        if (cueChange !== null || holdRef.current.getCurrentCue() === null) {
+          setCurrentCue(holdRef.current.getCurrentCue());
+        }
+        setHoldScore(holdRef.current.getScore());
       }
     }
 
@@ -110,30 +135,35 @@ export function usePoseSession(exerciseKey: ExerciseKey) {
     setReps([]);
     setCurrentCue(null);
     setElapsedSeconds(0);
-    counterRef.current = new RepCounter(EXERCISES[exerciseKey]);
+    setHoldScore(0);
+    pausedAccumRef.current = 0;
+    if (mode === 'hold') {
+      const holdConfig = HOLD_EXERCISES[poseKey];
+      holdRef.current = holdConfig ? new HoldTracker(holdConfig) : null;
+      counterRef.current = null;
+    } else {
+      const repConfig = EXERCISES[poseKey];
+      counterRef.current = repConfig ? new RepCounter(repConfig) : null;
+      holdRef.current = null;
+    }
+
+    // Model load (cached across sessions) and camera permission run in
+    // parallel — the permission prompt shows while the model downloads.
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('model-load-timeout')), 20000)
+    );
+    const modelPromise = Promise.race([getPoseLandmarker(), timeout]);
+    const cameraPromise = navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+    // Surface unified handling below; avoid unhandled rejection while the
+    // other promise settles first.
+    modelPromise.catch(() => {});
+    cameraPromise.catch(() => {});
 
     try {
-      const loadModel = async () => {
-        const vision = await import('@mediapipe/tasks-vision');
-        const fileset = await vision.FilesetResolver.forVisionTasks(
-          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm'
-        );
-        return vision.PoseLandmarker.createFromOptions(fileset, {
-          baseOptions: {
-            modelAssetPath:
-              'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
-            delegate: 'GPU',
-          },
-          runningMode: 'VIDEO',
-          numPoses: 1,
-        });
-      };
-      const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('model-load-timeout')), 20000)
-      );
-      landmarkerRef.current = await Promise.race([loadModel(), timeout]);
+      landmarkerRef.current = await modelPromise;
     } catch (e) {
       console.error('Failed to load pose model:', e);
+      cameraPromise.then((s) => s.getTracks().forEach((t) => t.stop())).catch(() => {});
       setErrorMessage(
         e instanceof Error && e.message === 'model-load-timeout'
           ? 'The pose model is taking too long to load. Check your connection and try again.'
@@ -146,7 +176,7 @@ export function usePoseSession(exerciseKey: ExerciseKey) {
 
     setStatus('requesting-camera');
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+      const mediaStream = await cameraPromise;
       streamRef.current = mediaStream;
       setStream(mediaStream);
     } catch (e) {
@@ -170,23 +200,44 @@ export function usePoseSession(exerciseKey: ExerciseKey) {
     }
 
     startTimeRef.current = Date.now();
-    timerRef.current = setInterval(() => setElapsedSeconds(Math.round((Date.now() - startTimeRef.current) / 1000)), 1000);
+    timerRef.current = setInterval(
+      () => setElapsedSeconds(Math.round((Date.now() - startTimeRef.current - pausedAccumRef.current) / 1000)),
+      1000
+    );
     setStatus('running');
-  }, [exerciseKey]);
+  }, [poseKey, mode]);
 
-  // Attach the stream once the <video> element is mounted. CoachPage only
-  // renders the video in the 'running' state, so assigning srcObject inside
-  // start() would hit a null ref — this effect runs after that mount.
+  // Attach the stream once the <video> element is mounted. The video only
+  // renders in the 'running' state, so assigning srcObject inside start()
+  // would hit a null ref — this effect runs after that mount.
   useEffect(() => {
     const video = videoRef.current;
     if (status !== 'running' || !stream || !video) return;
-    video.srcObject = stream;
-    video.play().catch((e) => console.error('Video play failed:', e));
+    if (video.srcObject !== stream) {
+      video.srcObject = stream;
+      video.play().catch((e) => console.error('Video play failed:', e));
+    }
     rafRef.current = requestAnimationFrame(loop);
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [status, stream, loop]);
+
+  const pause = useCallback(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (timerRef.current) clearInterval(timerRef.current);
+    pausedAtRef.current = Date.now();
+    setStatus((s) => (s === 'running' ? 'paused' : s));
+  }, []);
+
+  const resume = useCallback(() => {
+    pausedAccumRef.current += Date.now() - pausedAtRef.current;
+    timerRef.current = setInterval(
+      () => setElapsedSeconds(Math.round((Date.now() - startTimeRef.current - pausedAccumRef.current) / 1000)),
+      1000
+    );
+    setStatus((s) => (s === 'paused' ? 'running' : s));
+  }, []);
 
   const stop = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -194,14 +245,20 @@ export function usePoseSession(exerciseKey: ExerciseKey) {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     setStream(null);
-    landmarkerRef.current?.close?.();
+    // The landmarker is a shared module-level singleton (poseLandmarker.ts) —
+    // never close() it here or the next session pays the full reload.
     landmarkerRef.current = null;
     setStatus('ended');
   }, []);
 
   useEffect(() => stop, [stop]);
 
-  const avgScore = reps.length ? Math.round(reps.reduce((s, r) => s + r.score, 0) / reps.length) : 0;
+  const avgScore =
+    mode === 'hold'
+      ? holdScore
+      : reps.length
+      ? Math.round(reps.reduce((s, r) => s + r.score, 0) / reps.length)
+      : 0;
 
   return {
     status,
@@ -211,10 +268,13 @@ export function usePoseSession(exerciseKey: ExerciseKey) {
     currentCue,
     elapsedSeconds,
     avgScore,
-    phase: counterRef.current.getPhase(),
+    holdScore,
+    phase: counterRef.current?.getPhase() ?? 'idle',
     videoRef,
     canvasRef,
     start,
+    pause,
+    resume,
     stop,
   };
 }

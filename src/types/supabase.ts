@@ -262,6 +262,10 @@ export interface Database {
           avg_form_score: number | null
           rep_scores: Json
           feedback: Json
+          source: string
+          calories: number | null
+          exercises: Json
+          log_date: string
         }
         Insert: {
           id?: string
@@ -273,6 +277,10 @@ export interface Database {
           avg_form_score?: number | null
           rep_scores?: Json
           feedback?: Json
+          source?: string
+          calories?: number | null
+          exercises?: Json
+          log_date?: string
         }
         Update: {
           id?: string
@@ -284,6 +292,10 @@ export interface Database {
           avg_form_score?: number | null
           rep_scores?: Json
           feedback?: Json
+          source?: string
+          calories?: number | null
+          exercises?: Json
+          log_date?: string
         }
       }
       saved_foods: {

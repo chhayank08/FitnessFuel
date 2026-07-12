@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useDailyLogContext } from '../../context/DailyLogContext';
 import { supabase } from '../../lib/supabase';
 import { generateWeeklyMealPlan, DAYS, Meal, MealSlot } from '../../lib/planGenerator';
+import { SLOT_FALLBACK_IMAGES } from '../../lib/recipeCatalog';
 import { FoodItem } from '../../services/foods';
 import { useFoodSearch } from '../../hooks/useFoodSearch';
 import { useResearch } from '../../hooks/useResearch';
@@ -36,17 +37,11 @@ const item: Variants = {
   show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 120, damping: 18 } },
 };
 
-const MEAL_IMAGES: Record<string, string> = {
-  breakfast: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=600&q=80',
-  lunch: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&q=80',
-  dinner: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600&q=80',
-  snack: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600&q=80',
-};
-
+// Tab ids are stable (deep links, nav restore, ?scan=1); only labels/order changed.
 const TABS = [
-  { id: 'today', label: 'Today' },
+  { id: 'today', label: 'Overview' },
+  { id: 'plan', label: 'Weekly Plan' },
   { id: 'search', label: 'Food Search' },
-  { id: 'plan', label: 'Meal Plan' },
   { id: 'insights', label: 'Insights' },
 ];
 
@@ -449,7 +444,13 @@ const PlanTab: React.FC<{
           const done = selectedDay === todayIndex && isCompleted('meal', slot);
           return (
             <Card key={key} interactive onClick={() => setSelectedMeal({ slot, meal })} className="overflow-hidden p-0">
-              <img src={MEAL_IMAGES[slot]} alt={slot} className="h-32 w-full object-cover" />
+              <img
+                src={meal.image}
+                alt={meal.name}
+                loading="lazy"
+                className="h-32 w-full object-cover"
+                onError={(e) => { (e.target as HTMLImageElement).src = SLOT_FALLBACK_IMAGES[slot]; }}
+              />
               <div className="p-4">
                 <p className="text-xs font-medium uppercase tracking-wider text-ink-faint">{slot}</p>
                 <p className="mt-1 truncate text-sm font-semibold text-ink">{meal.name}</p>
@@ -475,7 +476,14 @@ const PlanTab: React.FC<{
 
       <Modal open={!!selectedMeal} onClose={() => setSelectedMeal(null)} panelClassName="max-w-lg max-h-[80vh] overflow-y-auto">
         {selectedMeal && (
-          <div className="p-6">
+          <div>
+            <img
+              src={selectedMeal.meal.image}
+              alt={selectedMeal.meal.name}
+              className="h-40 w-full object-cover"
+              onError={(e) => { (e.target as HTMLImageElement).src = SLOT_FALLBACK_IMAGES[selectedMeal.slot]; }}
+            />
+            <div className="p-6">
             <p className="text-xs font-medium uppercase tracking-wider text-ink-faint">{selectedMeal.slot}</p>
             <h3 className="mt-1 font-display text-xl font-semibold text-ink">{selectedMeal.meal.name}</h3>
             <div className="mt-4 grid grid-cols-4 gap-2 text-center">
@@ -508,6 +516,7 @@ const PlanTab: React.FC<{
               </ol>
             </div>
             <Button variant="ghost" className="mt-5 w-full" onClick={() => setSelectedMeal(null)}>Close</Button>
+            </div>
           </div>
         )}
       </Modal>
