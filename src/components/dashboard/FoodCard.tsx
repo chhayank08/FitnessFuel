@@ -10,10 +10,10 @@ interface FoodCardProps {
 
 const NUTRI_COLORS: Record<string, string> = {
   a: 'bg-success-500 text-surface-base',
-  b: 'bg-success-500/60 text-white',
+  b: 'bg-success-500/60 text-ink',
   c: 'bg-hydration-500 text-surface-base',
-  d: 'bg-secondary-500/70 text-white',
-  e: 'bg-secondary-500 text-white',
+  d: 'bg-secondary-500/70 text-ink',
+  e: 'bg-secondary-500 text-ink',
 };
 
 const FoodCard: React.FC<FoodCardProps> = ({ food, onClick }) => (
@@ -21,21 +21,21 @@ const FoodCard: React.FC<FoodCardProps> = ({ food, onClick }) => (
     {food.imageUrl ? (
       <img src={food.imageUrl} alt={food.name} className="h-12 w-12 flex-shrink-0 rounded-lg object-cover" />
     ) : (
-      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-surface-2 text-gray-500">
+      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-surface-2 text-ink-faint">
         <Utensils className="h-5 w-5" />
       </div>
     )}
     <div className="min-w-0 flex-1">
-      <p className="truncate text-sm font-medium text-white">{food.name}</p>
-      <p className="truncate text-xs text-gray-500">{food.brand || (food.source === 'usda' ? 'USDA' : 'Generic')}</p>
+      <p className="truncate text-sm font-medium text-ink">{food.name}</p>
+      <p className="truncate text-xs text-ink-faint">{food.brand || (food.source === 'usda' ? 'USDA' : 'Generic')}</p>
     </div>
     <div className="flex flex-shrink-0 items-center gap-2">
       {food.nutriScore && (
-        <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold uppercase ${NUTRI_COLORS[food.nutriScore] || 'bg-surface-3 text-gray-300'}`}>
+        <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold uppercase ${NUTRI_COLORS[food.nutriScore] || 'bg-surface-3 text-ink-muted'}`}>
           {food.nutriScore}
         </span>
       )}
-      <span className="text-xs font-semibold text-gray-300 tabular-nums">{Math.round(food.per100g.calories)} kcal</span>
+      <span className="text-xs font-semibold text-ink-muted tabular-nums">{Math.round(food.per100g.calories)} kcal</span>
     </div>
   </Card>
 );

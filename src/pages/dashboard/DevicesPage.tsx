@@ -57,18 +57,18 @@ const DevicesPage: React.FC = () => {
   return (
     <motion.div className="mx-auto max-w-5xl" variants={reducedMotion ? undefined : container} initial="hidden" animate="show">
       <motion.div variants={item} className="mb-6">
-        <h1 className="font-display text-3xl font-semibold text-white">Devices</h1>
-        <p className="mt-1 text-sm text-gray-400">Connect wearables to power your Health Score, steps, sleep, and body composition</p>
+        <h1 className="font-display text-3xl font-semibold text-ink">Devices</h1>
+        <p className="mt-1 text-sm text-ink-muted">Connect wearables to power your Health Score, steps, sleep, and body composition</p>
       </motion.div>
 
       {completingOAuth && (
-        <motion.div variants={item} className="mb-5 flex items-center gap-2 rounded-xl border border-primary-500/25 bg-primary-500/10 p-4 text-sm text-gray-300">
+        <motion.div variants={item} className="mb-5 flex items-center gap-2 rounded-xl border border-primary-500/25 bg-primary-500/10 p-4 text-sm text-ink-muted">
           <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-t-2 border-primary-400" />
           Completing your Google Health connection…
         </motion.div>
       )}
 
-      <motion.div variants={item} className="mb-5 rounded-xl border border-hydration-500/25 bg-hydration-500/10 p-4 text-sm text-gray-300">
+      <motion.div variants={item} className="mb-5 rounded-xl border border-hydration-500/25 bg-hydration-500/10 p-4 text-sm text-ink-muted">
         Google Health Connect isn't listed here — it's an Android-only system service and has no web API, so it can't sync
         to a browser-based app. "Fitbit (via Google Health)" below is the new cloud API Google is replacing the legacy
         Fitbit Web API with.
@@ -90,7 +90,7 @@ const DevicesPage: React.FC = () => {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-medium text-white">{provider.name}</h3>
+                        <h3 className="font-medium text-ink">{provider.name}</h3>
                         {connected && (
                           <Badge tone="success">
                             <CheckCircle2 className="h-3 w-3" /> Connected
@@ -102,14 +102,14 @@ const DevicesPage: React.FC = () => {
                           </Badge>
                         )}
                       </div>
-                      <p className="mt-1 text-sm text-gray-400">{provider.description}</p>
+                      <p className="mt-1 text-sm text-ink-muted">{provider.description}</p>
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {provider.metrics.map((m) => (
                           <Badge key={m} tone="neutral">{m}</Badge>
                         ))}
                       </div>
                       {connected && row?.last_sync_at && (
-                        <p className="mt-2 text-xs text-gray-500">Last synced {new Date(row.last_sync_at).toLocaleString()}</p>
+                        <p className="mt-2 text-xs text-ink-faint">Last synced {new Date(row.last_sync_at).toLocaleString()}</p>
                       )}
                     </div>
                   </div>
@@ -142,8 +142,8 @@ const DevicesPage: React.FC = () => {
 
                 {provider.availability === 'needs-setup' && provider.setupSteps && (
                   <div className="mt-4 rounded-xl bg-surface-2 p-3">
-                    <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-gray-500">To enable this integration</p>
-                    <ol className="space-y-1 text-xs text-gray-400">
+                    <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-ink-faint">To enable this integration</p>
+                    <ol className="space-y-1 text-xs text-ink-muted">
                       {provider.setupSteps.map((step, i) => (
                         <li key={i}>{i + 1}. {step}</li>
                       ))}

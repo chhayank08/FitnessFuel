@@ -64,8 +64,8 @@ const ExercisePage: React.FC = () => {
     <motion.div className="mx-auto max-w-7xl" variants={reducedMotion ? undefined : container} initial="hidden" animate="show">
       <motion.div variants={item} className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl font-semibold text-white">Training</h1>
-          <p className="mt-1 text-sm text-gray-400">Your weekly plan, the full exercise library, and session history</p>
+          <h1 className="font-display text-3xl font-semibold text-ink">Training</h1>
+          <p className="mt-1 text-sm text-ink-muted">Your weekly plan, the full exercise library, and session history</p>
         </div>
         <Tabs tabs={TABS} active={tab} onChange={setTab} />
       </motion.div>
@@ -121,7 +121,7 @@ const PlanTab: React.FC<{
             key={dayPlan.day}
             onClick={() => setSelectedDay(i)}
             className={`flex-shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
-              i === selectedDay ? 'bg-primary-500/20 text-white' : 'bg-surface-2 text-gray-400 hover:text-white'
+              i === selectedDay ? 'bg-primary-500/20 text-ink' : 'bg-surface-2 text-ink-muted hover:text-ink'
             } ${i === todayIndex ? 'ring-1 ring-primary-400/50' : ''}`}
           >
             {dayPlan.day.slice(0, 3)}
@@ -132,12 +132,12 @@ const PlanTab: React.FC<{
       {dayPlan && workout && (
         <Card className="p-5">
           <div className="flex items-center justify-between">
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
               {dayPlan.day}
               {isToday && <Badge tone="primary">Today</Badge>}
             </h3>
             {!isRest && (
-              <span className="flex items-center gap-1 text-xs text-gray-500">
+              <span className="flex items-center gap-1 text-xs text-ink-faint">
                 <Clock className="h-3.5 w-3.5" />
                 {workout.duration}
               </span>
@@ -145,14 +145,14 @@ const PlanTab: React.FC<{
           </div>
 
           {isRest ? (
-            <p className="mt-3 text-sm text-gray-400">Rest day — recovery, light stretching, or a gentle walk.</p>
+            <p className="mt-3 text-sm text-ink-muted">Rest day — recovery, light stretching, or a gentle walk.</p>
           ) : (
             <div className="mt-3 flex items-center justify-between rounded-xl bg-surface-2 px-3 py-2.5">
               <div>
-                <p className="text-sm font-medium text-white">{workout.name}</p>
+                <p className="text-sm font-medium text-ink">{workout.name}</p>
                 <Badge tone={TYPE_TONE[workout.type] || 'neutral'} className="mt-1">{workout.type}</Badge>
               </div>
-              <span className="text-xs text-gray-400">{workout.calories_burned} kcal</span>
+              <span className="text-xs text-ink-muted">{workout.calories_burned} kcal</span>
             </div>
           )}
 
@@ -160,7 +160,7 @@ const PlanTab: React.FC<{
             <button
               onClick={() => onToggle({ itemType: 'workout', itemKey: 'workout', itemName: workout.name })}
               className={`mt-3 w-full rounded-lg py-2 text-xs font-medium transition-colors ${
-                done ? 'bg-success-500/15 text-success-400' : 'bg-surface-2 text-gray-300 hover:bg-surface-3'
+                done ? 'bg-success-500/15 text-success-400' : 'bg-surface-2 text-ink-muted hover:bg-surface-3'
               }`}
             >
               {done ? 'Completed' : 'Mark as complete'}
@@ -183,18 +183,18 @@ const LibraryTab: React.FC = () => {
       <Card className="p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
             <input
               value={filters.query}
               onChange={(e) => setFilters((f) => ({ ...f, query: e.target.value }))}
               placeholder="Search exercises — e.g. squat, lat pulldown"
-              className="w-full rounded-xl border border-surface-line-strong bg-surface-2 py-2.5 pl-10 pr-3.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full rounded-xl border border-surface-line-strong bg-surface-2 py-2.5 pl-10 pr-3.5 text-sm text-ink placeholder-ink-faint focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
           <select
             value={filters.bodyPart}
             onChange={(e) => setFilters((f) => ({ ...f, bodyPart: e.target.value }))}
-            className="rounded-xl border border-surface-line-strong bg-surface-2 px-3.5 py-2.5 text-sm text-white capitalize focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="rounded-xl border border-surface-line-strong bg-surface-2 px-3.5 py-2.5 text-sm text-ink capitalize focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="">All body parts</option>
             {bodyParts.map((b) => (
@@ -204,7 +204,7 @@ const LibraryTab: React.FC = () => {
           <select
             value={filters.equipment}
             onChange={(e) => setFilters((f) => ({ ...f, equipment: e.target.value }))}
-            className="rounded-xl border border-surface-line-strong bg-surface-2 px-3.5 py-2.5 text-sm text-white capitalize focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="rounded-xl border border-surface-line-strong bg-surface-2 px-3.5 py-2.5 text-sm text-ink capitalize focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="">All equipment</option>
             {equipments.map((e) => (
@@ -235,13 +235,13 @@ const LibraryTab: React.FC = () => {
               {ex.mediaUrl ? (
                 <img src={ex.mediaUrl} alt={ex.name} className="h-14 w-14 flex-shrink-0 rounded-lg bg-surface-2 object-contain" />
               ) : (
-                <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-lg bg-surface-2 text-gray-500">
+                <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-lg bg-surface-2 text-ink-faint">
                   <Dumbbell className="h-5 w-5" />
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium capitalize text-white">{ex.name}</p>
-                <p className="truncate text-xs capitalize text-gray-500">{ex.bodyPart} · {ex.equipment}</p>
+                <p className="truncate text-sm font-medium capitalize text-ink">{ex.name}</p>
+                <p className="truncate text-xs capitalize text-ink-faint">{ex.bodyPart} · {ex.equipment}</p>
               </div>
             </Card>
           ))}
@@ -290,19 +290,19 @@ const HistoryTab: React.FC = () => {
       {sessions.map((s) => (
         <Card key={s.id} className="flex items-center justify-between p-4">
           <div>
-            <p className="text-sm font-medium capitalize text-white">{s.exercise_key.replace(/-/g, ' ')}</p>
-            <p className="text-xs text-gray-500">{new Date(s.started_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+            <p className="text-sm font-medium capitalize text-ink">{s.exercise_key.replace(/-/g, ' ')}</p>
+            <p className="text-xs text-ink-faint">{new Date(s.started_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
           </div>
           <div className="flex items-center gap-6 text-sm">
             <div className="text-center">
-              <p className="font-semibold text-white tabular-nums">{s.total_reps}</p>
-              <p className="text-xs text-gray-500">reps</p>
+              <p className="font-semibold text-ink tabular-nums">{s.total_reps}</p>
+              <p className="text-xs text-ink-faint">reps</p>
             </div>
             <div className="text-center">
               <p className={`font-semibold tabular-nums ${(s.avg_form_score ?? 0) >= 80 ? 'text-success-400' : (s.avg_form_score ?? 0) >= 60 ? 'text-primary-300' : 'text-secondary-400'}`}>
                 {s.avg_form_score != null ? Math.round(s.avg_form_score) : '—'}
               </p>
-              <p className="text-xs text-gray-500">form score</p>
+              <p className="text-xs text-ink-faint">form score</p>
             </div>
           </div>
         </Card>

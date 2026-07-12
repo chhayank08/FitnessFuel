@@ -42,14 +42,14 @@ const LearnPage: React.FC = () => {
   return (
     <motion.div className="mx-auto max-w-5xl" variants={reducedMotion ? undefined : container} initial="hidden" animate="show">
       <motion.div variants={item} className="mb-4">
-        <h1 className="flex items-center gap-2 font-display text-3xl font-semibold text-white">
+        <h1 className="flex items-center gap-2 font-display text-3xl font-semibold text-ink">
           <GraduationCap className="h-7 w-7 text-primary-300" />
           Learn
         </h1>
-        <p className="mt-1 text-sm text-gray-400">Evidence-based research on nutrition and training, tailored to your goal</p>
+        <p className="mt-1 text-sm text-ink-muted">Evidence-based research on nutrition and training, tailored to your goal</p>
       </motion.div>
 
-      <motion.div variants={item} className="mb-5 flex items-start gap-2 rounded-xl border border-secondary-500/25 bg-secondary-500/10 p-4 text-sm text-gray-300">
+      <motion.div variants={item} className="mb-5 flex items-start gap-2 rounded-xl border border-secondary-500/25 bg-secondary-500/10 p-4 text-sm text-ink-muted">
         <ShieldAlert className="mt-0.5 h-4 w-4 flex-shrink-0 text-secondary-400" />
         This content is educational, sourced from public research databases. It is not medical advice — talk to a
         healthcare professional before making decisions about your health.
@@ -61,7 +61,7 @@ const LearnPage: React.FC = () => {
             key={t}
             onClick={() => setActiveTopic(t)}
             className={`rounded-full px-3.5 py-1.5 text-xs font-medium capitalize transition-colors ${
-              activeTopic === t ? 'bg-primary-500/20 text-white' : 'bg-surface-2 text-gray-400 hover:text-white'
+              activeTopic === t ? 'bg-primary-500/20 text-ink' : 'bg-surface-2 text-ink-muted hover:text-ink'
             }`}
           >
             {t}
@@ -71,7 +71,7 @@ const LearnPage: React.FC = () => {
 
       <motion.div variants={item} className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Card className="p-5">
-          <h3 className="text-sm font-semibold text-white">Research articles</h3>
+          <h3 className="text-sm font-semibold text-ink">Research articles</h3>
           {loading ? (
             <div className="mt-3 space-y-2">
               <Skeleton className="h-16" />
@@ -79,16 +79,16 @@ const LearnPage: React.FC = () => {
               <Skeleton className="h-16" />
             </div>
           ) : articles.length === 0 ? (
-            <p className="mt-3 text-sm text-gray-400">No articles found for this topic right now.</p>
+            <p className="mt-3 text-sm text-ink-muted">No articles found for this topic right now.</p>
           ) : (
             <div className="mt-3 space-y-2">
               {articles.map((a) => (
                 <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer" className="block rounded-xl bg-surface-2 p-3 transition-colors hover:bg-surface-3">
-                  <p className="flex items-start justify-between gap-2 text-sm font-medium text-white">
+                  <p className="flex items-start justify-between gap-2 text-sm font-medium text-ink">
                     {a.title}
-                    <ExternalLink className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-gray-500" />
+                    <ExternalLink className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-ink-faint" />
                   </p>
-                  <p className="mt-1 text-xs text-gray-500">{a.authors} {a.journal && `· ${a.journal}`} {a.year && `· ${a.year}`}</p>
+                  <p className="mt-1 text-xs text-ink-faint">{a.authors} {a.journal && `· ${a.journal}`} {a.year && `· ${a.year}`}</p>
                 </a>
               ))}
             </div>
@@ -96,7 +96,7 @@ const LearnPage: React.FC = () => {
         </Card>
 
         <Card className="p-5">
-          <h3 className="flex items-center gap-1.5 text-sm font-semibold text-white">
+          <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink">
             <FlaskConical className="h-4 w-4 text-hydration-400" />
             Recruiting clinical trials
           </h3>
@@ -106,12 +106,12 @@ const LearnPage: React.FC = () => {
               <Skeleton className="h-16" />
             </div>
           ) : trials.length === 0 ? (
-            <p className="mt-3 text-sm text-gray-400">No actively recruiting trials found for this topic.</p>
+            <p className="mt-3 text-sm text-ink-muted">No actively recruiting trials found for this topic.</p>
           ) : (
             <div className="mt-3 space-y-2">
               {trials.map((t) => (
                 <a key={t.id} href={t.url} target="_blank" rel="noopener noreferrer" className="block rounded-xl bg-surface-2 p-3 transition-colors hover:bg-surface-3">
-                  <p className="text-sm font-medium text-white">{t.title}</p>
+                  <p className="text-sm font-medium text-ink">{t.title}</p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     <Badge tone="hydration">{t.status.replace(/_/g, ' ').toLowerCase()}</Badge>
                     {t.conditions.slice(0, 2).map((c) => (
@@ -127,17 +127,17 @@ const LearnPage: React.FC = () => {
 
       <motion.div variants={item} className="mt-5">
         <Card className="p-5">
-          <h3 className="text-sm font-semibold text-white">Food safety recall lookup</h3>
-          <p className="mt-1 text-xs text-gray-500">Search OpenFDA for food recall notices by product name</p>
+          <h3 className="text-sm font-semibold text-ink">Food safety recall lookup</h3>
+          <p className="mt-1 text-xs text-ink-faint">Search OpenFDA for food recall notices by product name</p>
           <div className="mt-3 flex gap-2">
             <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
               <input
                 value={recallQuery}
                 onChange={(e) => setRecallQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && runRecallSearch()}
                 placeholder="e.g. peanut butter, spinach"
-                className="w-full rounded-xl border border-surface-line-strong bg-surface-2 py-2.5 pl-10 pr-3.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full rounded-xl border border-surface-line-strong bg-surface-2 py-2.5 pl-10 pr-3.5 text-sm text-ink placeholder-ink-faint focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <Button onClick={runRecallSearch} loading={recallLoading}>Search</Button>
@@ -151,11 +151,11 @@ const LearnPage: React.FC = () => {
                 {recalls.map((r) => (
                   <div key={r.id} className="rounded-xl bg-surface-2 p-3">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-medium text-white">{r.product}</p>
+                      <p className="text-sm font-medium text-ink">{r.product}</p>
                       <Badge tone={r.classification === 'Class I' ? 'alert' : 'neutral'}>{r.classification}</Badge>
                     </div>
-                    <p className="mt-1 text-xs text-gray-400">{r.reason}</p>
-                    {r.date && <p className="mt-1 text-xs text-gray-500">{r.date}</p>}
+                    <p className="mt-1 text-xs text-ink-muted">{r.reason}</p>
+                    {r.date && <p className="mt-1 text-xs text-ink-faint">{r.date}</p>}
                   </div>
                 ))}
               </div>

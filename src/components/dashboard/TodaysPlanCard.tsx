@@ -6,6 +6,7 @@ import Card from '../ui/Card';
 import EmptyState from '../ui/EmptyState';
 import { TodaysPlan } from '../../lib/planGenerator';
 import { CompletionInput } from '../../hooks/useDailyLog';
+import { hapticLight } from '../../lib/haptics';
 
 interface TodaysPlanCardProps {
   plan: TodaysPlan | null; // null while the profile is incomplete
@@ -23,7 +24,7 @@ const CheckRow: React.FC<{
   onToggle: () => void;
 }> = ({ checked, title, subtitle, meta, icon, onToggle }) => (
   <button
-    onClick={onToggle}
+    onClick={() => { hapticLight(); onToggle(); }}
     className="group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
   >
     <span
@@ -39,16 +40,16 @@ const CheckRow: React.FC<{
         </motion.span>
       )}
     </span>
-    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-surface-2 text-gray-400">
+    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-surface-2 text-ink-muted">
       {icon}
     </span>
     <span className="min-w-0 flex-1">
-      <span className={`block truncate text-sm font-medium transition-colors ${checked ? 'text-gray-500 line-through' : 'text-white'}`}>
+      <span className={`block truncate text-sm font-medium transition-colors ${checked ? 'text-ink-faint line-through' : 'text-ink'}`}>
         {title}
       </span>
-      <span className="block text-xs capitalize text-gray-500">{subtitle}</span>
+      <span className="block text-xs capitalize text-ink-faint">{subtitle}</span>
     </span>
-    <span className="flex-shrink-0 text-xs text-gray-400 tabular-nums">{meta}</span>
+    <span className="flex-shrink-0 text-xs text-ink-muted tabular-nums">{meta}</span>
   </button>
 );
 
@@ -58,9 +59,9 @@ const TodaysPlanCard: React.FC<TodaysPlanCardProps> = ({ plan, isCompleted, onTo
   return (
     <Card className={`p-5 ${className}`}>
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white">Today's plan</h3>
+        <h3 className="text-sm font-semibold text-ink">Today's plan</h3>
         {plan && (
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-ink-faint">
             {plan.meals.filter((m) => isCompleted('meal', m.key)).length +
               (plan.workout && isCompleted('workout', 'workout') ? 1 : 0)}
             /{plan.meals.length + (plan.workout ? 1 : 0)} done
@@ -117,8 +118,8 @@ const TodaysPlanCard: React.FC<TodaysPlanCardProps> = ({ plan, isCompleted, onTo
                 <Dumbbell className="h-4 w-4" />
               </span>
               <div>
-                <p className="text-sm font-medium text-white">Rest day</p>
-                <p className="text-xs text-gray-400">Recovery, light stretching, or a gentle walk.</p>
+                <p className="text-sm font-medium text-ink">Rest day</p>
+                <p className="text-xs text-ink-muted">Recovery, light stretching, or a gentle walk.</p>
               </div>
             </div>
           )}

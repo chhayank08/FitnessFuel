@@ -218,3 +218,24 @@ export function getTodaysPlan(profileRow: Parameters<typeof toNutritionProfile>[
   const workout = exerciseDay.exercises[0];
   return { meals, workout: workout && workout.type !== 'rest' ? workout : null };
 }
+
+// Returns a different template meal for the slot with today's macros intact —
+// used by the "Replace meal" quick action. Pure: cycles the slot's name pool
+// past the excluded names.
+export function getAlternativeMeal(
+  profileRow: Parameters<typeof toNutritionProfile>[0],
+  slot: MealSlot,
+  excludeNames: string[],
+  date: Date = new Date()
+): Meal | null {
+  const goal = toNutritionProfile(profileRow).goal;
+  const current = getTodaysPlan(profileRow, date).meals.find((m) => m.key === slot)?.meal;
+  if (!current) return null;
+
+  const pool = MEAL_NAMES[slot]?.[goal] || MEAL_NAMES[slot]?.maintain || [];
+  const candidates = pool.filter((n) => !excludeNames.includes(n) && n !== current.name);
+  const name = candidates[0] ?? pool.find((n) => n !== current.name);
+  if (!name) return null;
+
+  return { ...current, name };
+}

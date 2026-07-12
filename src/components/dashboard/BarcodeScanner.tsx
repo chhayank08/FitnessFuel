@@ -69,11 +69,11 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ open, onClose, onDetect
     <Modal open={open} onClose={onClose} panelClassName="max-w-md">
       <div className="p-5">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-white">
+          <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-ink">
             <ScanBarcode className="h-5 w-5 text-primary-300" />
             Scan barcode
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <button onClick={onClose} className="text-ink-muted hover:text-ink">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -85,10 +85,10 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ open, onClose, onDetect
               <div className="pointer-events-none absolute inset-6 rounded-lg border-2 border-primary-400/60" />
             </div>
             {error && <p className="mt-2 text-sm text-secondary-400">{error}</p>}
-            <p className="mt-3 text-center text-xs text-gray-500">Point your camera at a product barcode</p>
+            <p className="mt-3 text-center text-xs text-ink-faint">Point your camera at a product barcode</p>
           </>
         ) : (
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-ink-muted">
             Barcode scanning isn't supported in this browser. Enter the barcode number manually instead.
           </p>
         )}
@@ -98,7 +98,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ open, onClose, onDetect
             value={manualCode}
             onChange={(e) => setManualCode(e.target.value)}
             placeholder="Enter barcode number"
-            className="flex-1 rounded-xl border border-surface-line-strong bg-surface-2 px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="flex-1 rounded-xl border border-surface-line-strong bg-surface-2 px-3.5 py-2.5 text-sm text-ink placeholder-ink-faint focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
           <Button onClick={() => manualCode.trim() && onDetected(manualCode.trim())}>Look up</Button>
         </div>

@@ -15,8 +15,8 @@ const item: Variants = {
 };
 
 const inputClass =
-  'w-full rounded-xl border border-surface-line-strong bg-surface-2 px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500';
-const labelClass = 'mb-1.5 block text-sm font-medium text-gray-300';
+  'w-full rounded-xl border border-surface-line-strong bg-surface-2 px-3.5 py-2.5 text-sm text-ink placeholder-ink-faint focus:outline-none focus:ring-2 focus:ring-primary-500';
+const labelClass = 'mb-1.5 block text-sm font-medium text-ink-muted';
 
 const ProfilePage: React.FC = () => {
   const { user } = useAuth();
@@ -137,8 +137,8 @@ const ProfilePage: React.FC = () => {
   return (
     <motion.div className="mx-auto max-w-5xl" variants={reducedMotion ? undefined : container} initial="hidden" animate="show">
       <motion.div variants={item} className="mb-6">
-        <h1 className="font-display text-3xl font-semibold text-white">Profile</h1>
-        <p className="mt-1 text-sm text-gray-400">Your details power every target and plan across the app</p>
+        <h1 className="font-display text-3xl font-semibold text-ink">Profile</h1>
+        <p className="mt-1 text-sm text-ink-muted">Your details power every target and plan across the app</p>
       </motion.div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
@@ -181,7 +181,7 @@ const ProfilePage: React.FC = () => {
               <div>
                 <label htmlFor="target_weight" className={labelClass}>Target Weight (kg)</label>
                 <input id="target_weight" name="target_weight" type="number" step="0.1" placeholder="e.g. 68" value={formData.target_weight} onChange={handleChange} className={inputClass} />
-                <p className="mt-1 text-xs text-gray-500">Powers the goal progress card on your dashboard</p>
+                <p className="mt-1 text-xs text-ink-faint">Powers the goal progress card on your dashboard</p>
               </div>
 
               <div>
@@ -210,7 +210,7 @@ const ProfilePage: React.FC = () => {
                     onChange={handleChange}
                     className="w-full accent-primary-500"
                   />
-                  <div className="mt-1 flex justify-between text-xs text-gray-500">
+                  <div className="mt-1 flex justify-between text-xs text-ink-faint">
                     <span>0.1 kg/week</span>
                     <span>1 kg/week</span>
                     <span>2 kg/week</span>
@@ -238,8 +238,8 @@ const ProfilePage: React.FC = () => {
 
         <motion.div variants={item}>
           <Card className="sticky top-24 p-5">
-            <h3 className="text-sm font-semibold text-white">Your numbers</h3>
-            <p className="mt-1 text-xs text-gray-500">Updates live as you edit the form</p>
+            <h3 className="text-sm font-semibold text-ink">Your numbers</h3>
+            <p className="mt-1 text-xs text-ink-faint">Updates live as you edit the form</p>
             {preview ? (
               <div className="mt-4 space-y-3">
                 {[
@@ -253,13 +253,13 @@ const ProfilePage: React.FC = () => {
                   ['Water target', `${(preview.targets.waterMl / 1000).toFixed(1)} L`],
                 ].map(([label, val]) => (
                   <div key={label} className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2">
-                    <span className="text-xs text-gray-400">{label}</span>
-                    <span className="text-sm font-semibold text-white tabular-nums">{val}</span>
+                    <span className="text-xs text-ink-muted">{label}</span>
+                    <span className="text-sm font-semibold text-ink tabular-nums">{val}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="mt-4 text-sm text-gray-400">Enter weight and height to see your personalized targets.</p>
+              <p className="mt-4 text-sm text-ink-muted">Enter weight and height to see your personalized targets.</p>
             )}
           </Card>
         </motion.div>

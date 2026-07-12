@@ -32,9 +32,9 @@ const StatTile: React.FC<StatTileProps> = ({
 
   return (
     <BaseStatCard title={title} icon={icon} iconClassName={iconClassName}>
-      <p className="mt-2 font-display text-2xl font-semibold text-white">
+      <p className="mt-2 font-display text-2xl font-semibold text-ink">
         <AnimatedNumber value={value} format={format} />
-        {unit && <span className="ml-1 text-sm font-normal text-gray-400">{unit}</span>}
+        {unit && <span className="ml-1 text-sm font-normal text-ink-muted">{unit}</span>}
       </p>
       {showDelta && (
         <p className={`mt-1.5 inline-flex items-center gap-1 text-xs font-medium ${isGood ? 'text-success-400' : 'text-secondary-400'}`}>

@@ -16,6 +16,26 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #0d0d18;
+        transition: opacity 0.3s ease;
+      }
+      [data-theme='light'] #splash { background: #f8f8fb; }
+      #splash.splash-done { opacity: 0; pointer-events: none; }
+      #splash svg { width: 56px; height: 56px; animation: splash-pulse 1.2s ease-in-out infinite; }
+      @keyframes splash-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.55; transform: scale(0.92); }
+      }
+      @media (prefers-reduced-motion: reduce) { #splash svg { animation: none; } }
+    </style>
   </head>
   <body class="bg-surface-base text-ink">
     <script>
@@ -24,6 +44,11 @@
         document.documentElement.dataset.theme = stored === 'light' ? 'light' : 'dark';
       })();
     </script>
+    <div id="splash" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#6C63FF" stroke-width="2" stroke-linecap="round">
+        <path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/>
+      </svg>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

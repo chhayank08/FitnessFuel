@@ -10,7 +10,7 @@ import WizardShell from '../../components/ui/WizardShell';
 import AnimatedNumber from '../../components/ui/AnimatedNumber';
 
 const inputClass =
-  'w-full rounded-xl border border-surface-line-strong bg-surface-2 px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500';
+  'w-full rounded-xl border border-surface-line-strong bg-surface-2 px-3.5 py-2.5 text-sm text-ink placeholder-ink-faint focus:outline-none focus:ring-2 focus:ring-primary-500';
 
 interface OptionCardProps {
   selected: boolean;
@@ -30,12 +30,12 @@ const OptionCard: React.FC<OptionCardProps> = ({ selected, icon: Icon, title, de
         : 'border-surface-line-strong bg-surface-2 hover:border-surface-line-strong hover:bg-surface-3'
     }`}
   >
-    <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl ${selected ? 'bg-primary-500/20 text-primary-300' : 'bg-surface-3 text-gray-400'}`}>
+    <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl ${selected ? 'bg-primary-500/20 text-primary-300' : 'bg-surface-3 text-ink-muted'}`}>
       <Icon className="h-5 w-5" />
     </div>
     <div className="min-w-0 flex-1">
-      <p className={`text-sm font-semibold ${selected ? 'text-white' : 'text-gray-200'}`}>{title}</p>
-      <p className="mt-0.5 text-xs text-gray-500">{description}</p>
+      <p className={`text-sm font-semibold ${selected ? 'text-ink' : 'text-ink-muted'}`}>{title}</p>
+      <p className="mt-0.5 text-xs text-ink-faint">{description}</p>
     </div>
   </button>
 );
@@ -172,12 +172,12 @@ const OnboardingPage: React.FC = () => {
           <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-500/15 text-primary-300">
             <Sparkles className="h-6 w-6" />
           </div>
-          <h1 className="mt-4 font-display text-display-lg text-white">Welcome to Fitness Fuel</h1>
-          <p className="mt-2 text-sm text-gray-400">
+          <h1 className="mt-4 font-display text-display-lg text-ink">Welcome to Fitness Fuel</h1>
+          <p className="mt-2 text-sm text-ink-muted">
             A few quick questions and we'll build your personalized nutrition and training targets.
           </p>
           <div className="mt-8">
-            <label className="mb-1.5 block text-sm font-medium text-gray-300">What should we call you?</label>
+            <label className="mb-1.5 block text-sm font-medium text-ink-muted">What should we call you?</label>
             <input
               autoFocus
               value={fullName}
@@ -191,26 +191,26 @@ const OnboardingPage: React.FC = () => {
 
       {step === 1 && (
         <div className="flex flex-1 flex-col justify-center">
-          <h1 className="font-display text-display-lg text-white">About you</h1>
-          <p className="mt-2 text-sm text-gray-400">This drives the calorie and macro math — Mifflin-St Jeor, nothing hidden.</p>
+          <h1 className="font-display text-display-lg text-ink">About you</h1>
+          <p className="mt-2 text-sm text-ink-muted">This drives the calorie and macro math — Mifflin-St Jeor, nothing hidden.</p>
           <div className="mt-8 grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-300">Age</label>
+              <label className="mb-1.5 block text-sm font-medium text-ink-muted">Age</label>
               <input type="number" value={age} onChange={(e) => setAge(e.target.value)} className={inputClass} />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-300">Gender</label>
+              <label className="mb-1.5 block text-sm font-medium text-ink-muted">Gender</label>
               <select value={gender} onChange={(e) => setGender(e.target.value)} className={inputClass}>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
               </select>
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-300">Height (cm)</label>
+              <label className="mb-1.5 block text-sm font-medium text-ink-muted">Height (cm)</label>
               <input type="number" value={height} onChange={(e) => setHeight(e.target.value)} className={inputClass} />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-300">Weight (kg)</label>
+              <label className="mb-1.5 block text-sm font-medium text-ink-muted">Weight (kg)</label>
               <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} className={inputClass} />
             </div>
           </div>
@@ -219,8 +219,8 @@ const OnboardingPage: React.FC = () => {
 
       {step === 2 && (
         <div className="flex flex-1 flex-col justify-center">
-          <h1 className="font-display text-display-lg text-white">What's your goal?</h1>
-          <p className="mt-2 text-sm text-gray-400">We'll tune your calorie and protein targets around this.</p>
+          <h1 className="font-display text-display-lg text-ink">What's your goal?</h1>
+          <p className="mt-2 text-sm text-ink-muted">We'll tune your calorie and protein targets around this.</p>
           <div className="mt-8 space-y-3">
             {GOAL_OPTIONS.map((opt) => (
               <OptionCard
@@ -238,10 +238,10 @@ const OnboardingPage: React.FC = () => {
 
       {step === 3 && showPace && (
         <div className="flex flex-1 flex-col justify-center">
-          <h1 className="font-display text-display-lg text-white">Target &amp; pace</h1>
-          <p className="mt-2 text-sm text-gray-400">Optional — leave the target blank if you're not sure yet.</p>
+          <h1 className="font-display text-display-lg text-ink">Target &amp; pace</h1>
+          <p className="mt-2 text-sm text-ink-muted">Optional — leave the target blank if you're not sure yet.</p>
           <div className="mt-8">
-            <label className="mb-1.5 block text-sm font-medium text-gray-300">Target weight (kg)</label>
+            <label className="mb-1.5 block text-sm font-medium text-ink-muted">Target weight (kg)</label>
             <input
               type="number"
               step="0.1"
@@ -252,7 +252,7 @@ const OnboardingPage: React.FC = () => {
             />
           </div>
           <div className="mt-6">
-            <label className="mb-1.5 block text-sm font-medium text-gray-300">
+            <label className="mb-1.5 block text-sm font-medium text-ink-muted">
               Weekly {goal === 'weight_loss' ? 'loss' : 'gain'} pace: {weeklyChange.toFixed(1)} kg/week
             </label>
             <input
@@ -264,7 +264,7 @@ const OnboardingPage: React.FC = () => {
               onChange={(e) => setWeeklyChange(Number(e.target.value))}
               className="w-full accent-primary-500"
             />
-            <div className="mt-1 flex justify-between text-xs text-gray-500">
+            <div className="mt-1 flex justify-between text-xs text-ink-faint">
               <span>0.1 kg/week</span>
               <span>1 kg/week</span>
               <span>2 kg/week</span>
@@ -275,8 +275,8 @@ const OnboardingPage: React.FC = () => {
 
       {step === 4 && (
         <div className="flex flex-1 flex-col justify-center">
-          <h1 className="font-display text-display-lg text-white">How active are you?</h1>
-          <p className="mt-2 text-sm text-gray-400">Outside of planned workouts — your day-to-day baseline.</p>
+          <h1 className="font-display text-display-lg text-ink">How active are you?</h1>
+          <p className="mt-2 text-sm text-ink-muted">Outside of planned workouts — your day-to-day baseline.</p>
           <div className="mt-8 space-y-3">
             {ACTIVITY_OPTIONS.map((opt) => (
               <OptionCard
@@ -297,14 +297,14 @@ const OnboardingPage: React.FC = () => {
           <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-success-500/15 text-success-400">
             <Sparkles className="h-6 w-6" />
           </div>
-          <h1 className="mt-4 font-display text-display-lg text-white">Your plan is ready</h1>
-          <p className="mt-2 text-sm text-gray-400">Here's what we calculated — you can fine-tune it anytime in Settings.</p>
+          <h1 className="mt-4 font-display text-display-lg text-ink">Your plan is ready</h1>
+          <p className="mt-2 text-sm text-ink-muted">Here's what we calculated — you can fine-tune it anytime in Settings.</p>
           {preview && (
             <div className="mt-8 space-y-3">
               <div className="rounded-2xl border border-primary-500/25 bg-primary-500/10 p-5 text-center">
                 <p className="text-xs font-medium uppercase tracking-wider text-primary-300">Daily calorie target</p>
-                <p className="mt-1 font-display text-display-lg text-white">
-                  <AnimatedNumber value={preview.targets.dailyCalories} /> <span className="text-base font-normal text-gray-400">kcal</span>
+                <p className="mt-1 font-display text-display-lg text-ink">
+                  <AnimatedNumber value={preview.targets.dailyCalories} /> <span className="text-base font-normal text-ink-muted">kcal</span>
                 </p>
               </div>
               <div className="grid grid-cols-3 gap-3">
@@ -314,14 +314,14 @@ const OnboardingPage: React.FC = () => {
                   ['Fat', preview.targets.fat, 'g'],
                 ].map(([label, val, unit]) => (
                   <div key={label as string} className="rounded-xl bg-surface-2 p-3 text-center">
-                    <p className="font-display text-lg font-semibold text-white tabular-nums">{val}{unit}</p>
-                    <p className="text-xs text-gray-500">{label}</p>
+                    <p className="font-display text-lg font-semibold text-ink tabular-nums">{val}{unit}</p>
+                    <p className="text-xs text-ink-faint">{label}</p>
                   </div>
                 ))}
               </div>
               <div className="flex items-center justify-between rounded-xl bg-surface-2 px-4 py-3">
-                <span className="text-sm text-gray-400">BMI</span>
-                <span className="text-sm font-semibold text-white tabular-nums">{preview.bmi.bmi} ({preview.bmi.category})</span>
+                <span className="text-sm text-ink-muted">BMI</span>
+                <span className="text-sm font-semibold text-ink tabular-nums">{preview.bmi.bmi} ({preview.bmi.category})</span>
               </div>
             </div>
           )}

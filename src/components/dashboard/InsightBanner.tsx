@@ -44,11 +44,11 @@ const InsightBanner: React.FC<InsightBannerProps> = ({
           className={`flex items-center gap-3 rounded-xl border ${styles.border} ${styles.bg} px-4 py-3 ${className}`}
         >
           <Icon className={`h-4 w-4 flex-shrink-0 ${styles.icon}`} />
-          <p className="flex-1 text-sm text-gray-200">{text}</p>
+          <p className="flex-1 text-sm text-ink-muted">{text}</p>
           {action && (
             <button
               onClick={action.onClick}
-              className="flex-shrink-0 text-sm font-medium text-white underline-offset-2 hover:underline"
+              className="flex-shrink-0 text-sm font-medium text-ink underline-offset-2 hover:underline"
             >
               {action.label}
             </button>
@@ -57,7 +57,7 @@ const InsightBanner: React.FC<InsightBannerProps> = ({
             <button
               onClick={() => setDismissed(true)}
               aria-label="Dismiss"
-              className="flex-shrink-0 text-gray-500 hover:text-gray-300"
+              className="flex-shrink-0 text-ink-faint hover:text-ink-muted"
             >
               <X className="h-4 w-4" />
             </button>

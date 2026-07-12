@@ -1,20 +1,40 @@
 import React from 'react';
-import { Outlet, Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { WifiOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { DailyLogProvider } from '../../context/DailyLogContext';
+import { DailyLogProvider, useDailyLogContext } from '../../context/DailyLogContext';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import { useLastRoute } from '../../hooks/useLastRoute';
 import Sidebar from '../../components/dashboard/Sidebar';
 import BottomTabBar from '../../components/dashboard/BottomTabBar';
 import DashboardHeader from '../../components/dashboard/DashboardHeader';
 import CommandPalette from '../../components/dashboard/CommandPalette';
 import QuickAddModal from '../../components/dashboard/QuickAddModal';
+import SmartActionButton from '../../components/dashboard/SmartActionButton';
 import InstallPrompt from '../../components/InstallPrompt';
+import { TourProvider } from '../../components/onboarding/TourContext';
+import Spotlight from '../../components/onboarding/Spotlight';
+import PageTransition from '../../components/PageTransition';
+import PullToRefresh from '../../components/PullToRefresh';
+
+// Needs DailyLogProvider above it, hence the small inner component.
+const RefreshableOutlet: React.FC = () => {
+  const { refreshProfile, dailyLog } = useDailyLogContext();
+  return (
+    <PullToRefresh onRefresh={() => Promise.all([refreshProfile(), dailyLog.refresh()])}>
+      <PageTransition />
+    </PullToRefresh>
+  );
+};
 
 const DashboardLayout: React.FC = () => {
   const { user, loading } = useAuth();
   const isOnline = useOnlineStatus();
+  const location = useLocation();
+  useLastRoute();
+  // Hide the FAB during a coach session — it would overlap the video controls.
+  const showFab = !location.pathname.startsWith('/dashboard/exercise/coach');
 
   if (loading) {
     return (
@@ -30,6 +50,7 @@ const DashboardLayout: React.FC = () => {
 
   return (
     <DailyLogProvider>
+      <TourProvider>
       <div className="min-h-screen bg-surface-base">
         <DashboardHeader />
         <AnimatePresence>
@@ -51,14 +72,17 @@ const DashboardLayout: React.FC = () => {
         <div className="flex">
           <Sidebar />
           <main className="ml-0 mt-20 min-h-screen flex-1 p-4 pb-[calc(4.25rem+env(safe-area-inset-bottom)+1rem)] md:ml-64 md:p-8 md:pb-8">
-            <Outlet />
+            <RefreshableOutlet />
           </main>
         </div>
         <BottomTabBar />
+        {showFab && <SmartActionButton variant="fab" />}
         <CommandPalette />
         <QuickAddModal />
         <InstallPrompt />
+        <Spotlight />
       </div>
+      </TourProvider>
     </DailyLogProvider>
   );
 };

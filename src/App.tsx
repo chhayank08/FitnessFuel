@@ -1,8 +1,10 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { SplashScreen } from '@capacitor/splash-screen';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { Toaster } from 'react-hot-toast';
-import { useTheme } from './hooks/useTheme';
 import { useServiceWorkerUpdate } from './lib/pwa';
 import LandingPage from './pages/LandingPage';
 import DashboardLayout from './pages/dashboard/DashboardLayout';
@@ -25,10 +27,21 @@ const LazyFallback = (
 );
 
 function App() {
-  useTheme();
   useServiceWorkerUpdate();
 
+  // Fade out the pre-JS HTML splash once React has mounted; idempotent so the
+  // StrictMode double-run is harmless.
+  useEffect(() => {
+    const splash = document.getElementById('splash');
+    if (splash && !splash.classList.contains('splash-done')) {
+      splash.classList.add('splash-done');
+      setTimeout(() => splash.remove(), 350);
+    }
+    if (Capacitor.isNativePlatform()) SplashScreen.hide().catch(() => {});
+  }, []);
+
   return (
+    <ThemeProvider>
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
         <Toaster
@@ -84,6 +97,7 @@ function App() {
         </Routes>
       </AuthProvider>
     </Router>
+    </ThemeProvider>
   );
 }
 

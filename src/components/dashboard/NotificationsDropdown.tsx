@@ -43,12 +43,12 @@ const NotificationsDropdown: React.FC = () => {
             transition={{ duration: 0.15 }}
           >
             <div className="border-b border-surface-line px-4 py-3">
-              <p className="text-sm font-semibold text-white">Notifications</p>
+              <p className="text-sm font-semibold text-ink">Notifications</p>
             </div>
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center px-4 py-8 text-center">
                 <CheckCircle2 className="mb-2 h-6 w-6 text-success-400" />
-                <p className="text-sm text-gray-400">All caught up</p>
+                <p className="text-sm text-ink-muted">All caught up</p>
               </div>
             ) : (
               <div className="max-h-80 overflow-y-auto p-2">
@@ -58,8 +58,8 @@ const NotificationsDropdown: React.FC = () => {
                       <n.icon className="h-4 w-4" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-white">{n.title}</p>
-                      <p className="mt-0.5 text-xs text-gray-400">{n.description}</p>
+                      <p className="text-sm font-medium text-ink">{n.title}</p>
+                      <p className="mt-0.5 text-xs text-ink-muted">{n.description}</p>
                     </div>
                   </div>
                 ))}

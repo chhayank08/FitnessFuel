@@ -7,7 +7,7 @@ import { PILLAR_ITEMS, SECONDARY_ITEMS } from './navItems';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `group relative flex items-center rounded-xl px-4 py-2.5 text-sm font-medium transition-colors duration-150 ${
-    isActive ? 'bg-primary-500/15 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'
+    isActive ? 'bg-primary-500/15 text-ink' : 'text-ink-muted hover:bg-white/5 hover:text-ink'
   }`;
 
 const Sidebar: React.FC = () => {
@@ -18,9 +18,9 @@ const Sidebar: React.FC = () => {
   const YouIcon = PILLAR_ITEMS[4].icon;
 
   return (
-    <div className="fixed left-0 top-0 z-30 hidden h-full w-64 flex-shrink-0 flex-col border-r border-surface-line bg-surface-1 md:flex">
+    <div data-tour="sidebar" className="fixed left-0 top-0 z-30 hidden h-full w-64 flex-shrink-0 flex-col border-r border-surface-line bg-surface-1 md:flex">
       <nav className="mt-24 flex-1 overflow-y-auto px-3">
-        <p className="mb-2 px-4 text-[11px] font-semibold uppercase tracking-widest text-gray-500">Menu</p>
+        <p className="mb-2 px-4 text-[11px] font-semibold uppercase tracking-widest text-ink-faint">Menu</p>
         <div className="space-y-1">
           {PILLAR_ITEMS.slice(0, 4).map((item) => (
             <NavLink key={item.path} to={item.path} end={item.path === '/dashboard'} className={navLinkClass}>
@@ -39,7 +39,7 @@ const Sidebar: React.FC = () => {
           <button
             onClick={() => setYouExpanded((v) => !v)}
             className={`flex w-full items-center rounded-xl px-4 py-2.5 text-sm font-medium transition-colors duration-150 ${
-              isOnSecondaryPage ? 'text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'
+              isOnSecondaryPage ? 'text-ink' : 'text-ink-muted hover:bg-white/5 hover:text-ink'
             }`}
           >
             <YouIcon size={19} className={`mr-3 ${isOnSecondaryPage ? 'text-primary-300' : ''}`} />
@@ -77,7 +77,7 @@ const Sidebar: React.FC = () => {
       <div className="border-t border-surface-line p-4">
         <button
           onClick={() => signOut()}
-          className="flex w-full items-center rounded-xl px-4 py-2.5 text-sm font-medium text-gray-400 transition-colors duration-150 hover:bg-white/5 hover:text-white"
+          className="flex w-full items-center rounded-xl px-4 py-2.5 text-sm font-medium text-ink-muted transition-colors duration-150 hover:bg-white/5 hover:text-ink"
         >
           <LogOut size={19} className="mr-3" />
           Sign Out

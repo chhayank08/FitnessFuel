@@ -128,23 +128,23 @@ const CommandPalette: React.FC = () => {
   return (
     <Modal open={palette.open} onClose={() => palette.setOpen(false)} align="top" panelClassName="max-w-xl overflow-hidden">
       <div className="flex items-center gap-3 border-b border-surface-line px-4">
-        <Search className="h-4 w-4 flex-shrink-0 text-gray-500" />
+        <Search className="h-4 w-4 flex-shrink-0 text-ink-faint" />
         <input
           ref={inputRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder="Search pages and actions…"
-          className="w-full bg-transparent py-3.5 text-sm text-white placeholder-gray-500 focus:outline-none"
+          className="w-full bg-transparent py-3.5 text-sm text-ink placeholder-ink-faint focus:outline-none"
         />
-        <kbd className="rounded-md border border-surface-line-strong bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium text-gray-400">
+        <kbd className="rounded-md border border-surface-line-strong bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium text-ink-muted">
           esc
         </kbd>
       </div>
 
       <div ref={listRef} className="max-h-80 overflow-y-auto p-2">
         {filtered.length === 0 && (
-          <p className="px-3 py-8 text-center text-sm text-gray-500">Nothing matches "{query}"</p>
+          <p className="px-3 py-8 text-center text-sm text-ink-faint">Nothing matches "{query}"</p>
         )}
         {filtered.map((cmd, index) => {
           const showSection = cmd.section !== lastSection;
@@ -152,7 +152,7 @@ const CommandPalette: React.FC = () => {
           return (
             <React.Fragment key={cmd.id}>
               {showSection && (
-                <p className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-widest text-gray-500 first:pt-1">
+                <p className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-widest text-ink-faint first:pt-1">
                   {cmd.section}
                 </p>
               )}
@@ -161,10 +161,10 @@ const CommandPalette: React.FC = () => {
                 onClick={cmd.run}
                 onMouseMove={() => setActiveIndex(index)}
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${
-                  index === activeIndex ? 'bg-primary-500/15 text-white' : 'text-gray-300'
+                  index === activeIndex ? 'bg-primary-500/15 text-ink' : 'text-ink-muted'
                 }`}
               >
-                <cmd.icon className={`h-4 w-4 ${index === activeIndex ? 'text-primary-300' : 'text-gray-500'}`} />
+                <cmd.icon className={`h-4 w-4 ${index === activeIndex ? 'text-primary-300' : 'text-ink-faint'}`} />
                 {cmd.label}
               </button>
             </React.Fragment>

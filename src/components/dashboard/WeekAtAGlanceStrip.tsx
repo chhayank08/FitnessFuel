@@ -24,7 +24,7 @@ const WeekAtAGlanceStrip: React.FC<WeekAtAGlanceStripProps> = ({
 
   return (
     <Card className={`p-5 ${className}`}>
-      <h3 className="text-sm font-semibold text-white">This week</h3>
+      <h3 className="text-sm font-semibold text-ink">This week</h3>
       <div className="mt-4 grid grid-cols-7 gap-1.5 sm:gap-2">
         {DAYS.map((day, i) => {
           const isToday = i === todayIndex;
@@ -40,7 +40,7 @@ const WeekAtAGlanceStrip: React.FC<WeekAtAGlanceStripProps> = ({
                 isToday ? 'bg-primary-500/15 ring-1 ring-primary-400/40' : 'hover:bg-white/5'
               }`}
             >
-              <span className={`text-[10px] font-medium uppercase tracking-wide ${isToday ? 'text-primary-300' : 'text-gray-500'}`}>
+              <span className={`text-[10px] font-medium uppercase tracking-wide ${isToday ? 'text-primary-300' : 'text-ink-faint'}`}>
                 {day.slice(0, 3)}
               </span>
               <span className="flex items-center gap-0.5">
@@ -52,7 +52,7 @@ const WeekAtAGlanceStrip: React.FC<WeekAtAGlanceStripProps> = ({
                   />
                 )}
                 {isRest ? (
-                  <Moon className="h-3 w-3 text-gray-500" />
+                  <Moon className="h-3 w-3 text-ink-faint" />
                 ) : (
                   <Dumbbell
                     className={`h-3 w-3 ${isToday && todayCompleted.workout ? 'text-success-400' : 'text-primary-400/70'}`}

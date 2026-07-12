@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, useReducedMotion, Variants } from 'framer-motion';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Camera, Dumbbell, Mic, MicOff, Square, AlertTriangle, RotateCcw } from 'lucide-react';
+import { Camera, Dumbbell, Mic, MicOff, Square, AlertTriangle, RotateCcw, ClipboardList } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -31,14 +32,34 @@ function speak(text: string) {
 
 const CoachPage: React.FC = () => {
   const reducedMotion = useReducedMotion();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { settings, update } = useSettings();
   const { saveSession } = useWorkoutSessions();
-  const [exerciseKey, setExerciseKey] = useState<ExerciseKey>('squat');
+  const paramExercise = searchParams.get('exercise');
+  const [exerciseKey, setExerciseKey] = useState<ExerciseKey>(
+    paramExercise && paramExercise in EXERCISES ? (paramExercise as ExerciseKey) : 'squat'
+  );
   const [reportSaved, setReportSaved] = useState(false);
   const session = usePoseSession(exerciseKey);
   const lastAnnouncedRep = useRef(0);
+  const autoStarted = useRef(false);
 
   const voiceOn = settings.coach.voiceFeedback;
+
+  // ?autostart=1 launches the session immediately (dashboard "Start Workout" CTA).
+  // Clear the param so refresh/back doesn't re-trigger; StrictMode guard via ref.
+  useEffect(() => {
+    if (searchParams.get('autostart') !== '1' || autoStarted.current) return;
+    autoStarted.current = true;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('autostart');
+      return next;
+    }, { replace: true });
+    session.start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!voiceOn || session.status !== 'running') return;
@@ -74,14 +95,14 @@ const CoachPage: React.FC = () => {
   return (
     <motion.div className="mx-auto max-w-5xl" variants={reducedMotion ? undefined : container} initial="hidden" animate="show">
       <motion.div variants={item} className="mb-6">
-        <h1 className="font-display text-3xl font-semibold text-white">Form Coach</h1>
-        <p className="mt-1 text-sm text-gray-400">Real-time pose analysis for rep counting and form feedback — right from your webcam</p>
+        <h1 className="font-display text-3xl font-semibold text-ink">Form Coach</h1>
+        <p className="mt-1 text-sm text-ink-muted">Real-time pose analysis for rep counting and form feedback — right from your webcam</p>
       </motion.div>
 
       {session.status === 'idle' && (
         <motion.div variants={item} className="space-y-5">
           <Card className="p-5">
-            <h3 className="text-sm font-semibold text-white">Choose an exercise</h3>
+            <h3 className="text-sm font-semibold text-ink">Choose an exercise</h3>
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
               {EXERCISE_LIST.map((ex) => (
                 <button
@@ -91,8 +112,8 @@ const CoachPage: React.FC = () => {
                     exerciseKey === ex.key ? 'border-primary-400/60 bg-primary-500/10' : 'border-surface-line bg-surface-2 hover:border-surface-line-strong'
                   }`}
                 >
-                  <Dumbbell className={`h-5 w-5 ${exerciseKey === ex.key ? 'text-primary-300' : 'text-gray-500'}`} />
-                  <p className="mt-2 text-sm font-medium text-white">{ex.name}</p>
+                  <Dumbbell className={`h-5 w-5 ${exerciseKey === ex.key ? 'text-primary-300' : 'text-ink-faint'}`} />
+                  <p className="mt-2 text-sm font-medium text-ink">{ex.name}</p>
                 </button>
               ))}
             </div>
@@ -101,12 +122,12 @@ const CoachPage: React.FC = () => {
           <Card className="p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-sm font-semibold text-white">{config.name} setup</h3>
-                <p className="mt-1 text-sm text-gray-400">{config.instructions}</p>
+                <h3 className="text-sm font-semibold text-ink">{config.name} setup</h3>
+                <p className="mt-1 text-sm text-ink-muted">{config.instructions}</p>
               </div>
               <button
                 onClick={() => update({ coach: { voiceFeedback: !voiceOn } })}
-                className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5 text-xs text-gray-300 hover:bg-surface-3"
+                className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5 text-xs text-ink-muted hover:bg-surface-3"
               >
                 {voiceOn ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
                 Voice {voiceOn ? 'on' : 'off'}
@@ -122,11 +143,19 @@ const CoachPage: React.FC = () => {
 
       {(session.status === 'loading-model' || session.status === 'requesting-camera') && (
         <motion.div variants={item}>
-          <Card className="flex flex-col items-center gap-3 p-12 text-center">
-            <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-t-2 border-primary-500" />
-            <p className="text-sm text-gray-300">
-              {session.status === 'loading-model' ? 'Loading the pose-detection model…' : 'Requesting camera access…'}
-            </p>
+          <Card className="relative overflow-hidden p-0">
+            <div className="flex aspect-video w-full flex-col items-center justify-center gap-4 bg-surface-2">
+              <div className="relative">
+                <Camera className="h-10 w-10 animate-pulse text-primary-400" />
+                <span className="absolute -right-1 -top-1 h-3 w-3 animate-pulse-dot rounded-full bg-primary-500" />
+              </div>
+              <div className="flex items-center gap-2.5">
+                <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-t-2 border-primary-500" />
+                <p className="text-sm text-ink-muted">
+                  {session.status === 'loading-model' ? 'Loading the pose-detection model…' : 'Waiting for camera access — check the permission prompt'}
+                </p>
+              </div>
+            </div>
           </Card>
         </motion.div>
       )}
@@ -135,11 +164,26 @@ const CoachPage: React.FC = () => {
         <motion.div variants={item}>
           <Card className="flex flex-col items-center gap-3 p-12 text-center">
             <AlertTriangle className="h-8 w-8 text-secondary-400" />
-            <p className="text-sm text-gray-300">{session.errorMessage}</p>
-            <Button variant="subtle" onClick={session.start}>
-              <RotateCcw className="mr-1.5 h-4 w-4" />
-              Try again
-            </Button>
+            <p className="max-w-sm text-sm text-ink-muted">{session.errorMessage}</p>
+            {session.errorKind === 'denied' && (
+              <ol className="max-w-sm list-inside list-decimal space-y-1 text-left text-xs text-ink-faint">
+                <li>Open your browser's site settings (padlock icon in the address bar)</li>
+                <li>Set Camera to "Allow" — on iOS: Settings → Safari → Camera</li>
+                <li>Reload this page and try again</li>
+              </ol>
+            )}
+            <div className="mt-1 flex flex-col gap-2 sm:flex-row">
+              <Button onClick={session.start}>
+                <RotateCcw className="mr-1.5 h-4 w-4" />
+                Try again
+              </Button>
+              {session.errorKind === 'no-camera' && (
+                <Button variant="subtle" onClick={() => navigate('/dashboard/exercise')}>
+                  <ClipboardList className="mr-1.5 h-4 w-4" />
+                  Log workout manually
+                </Button>
+              )}
+            </div>
           </Card>
         </motion.div>
       )}
@@ -162,24 +206,24 @@ const CoachPage: React.FC = () => {
 
           <div className="space-y-4">
             <Card className="flex flex-col items-center p-5">
-              <span className="font-display text-4xl font-semibold text-white">
+              <span className="font-display text-4xl font-semibold text-ink">
                 <AnimatedNumber value={session.reps.length} />
               </span>
-              <span className="text-xs text-gray-400">reps · {config.name}</span>
-              <p className="mt-2 text-xs text-gray-500 tabular-nums">{Math.floor(session.elapsedSeconds / 60)}:{String(session.elapsedSeconds % 60).padStart(2, '0')}</p>
+              <span className="text-xs text-ink-muted">reps · {config.name}</span>
+              <p className="mt-2 text-xs text-ink-faint tabular-nums">{Math.floor(session.elapsedSeconds / 60)}:{String(session.elapsedSeconds % 60).padStart(2, '0')}</p>
             </Card>
 
             <Card className="flex flex-col items-center p-5">
               <RingGauge value={session.avgScore / 100} size={100} colorFrom={session.avgScore >= 80 ? '#4AE3AC' : '#857BFF'} colorTo={session.avgScore >= 80 ? '#34D399' : '#6C63FF'}>
-                <span className="font-display text-xl font-semibold text-white">{session.avgScore || '—'}</span>
+                <span className="font-display text-xl font-semibold text-ink">{session.avgScore || '—'}</span>
               </RingGauge>
-              <span className="mt-2 text-xs text-gray-400">avg form score</span>
+              <span className="mt-2 text-xs text-ink-muted">avg form score</span>
             </Card>
 
             {session.currentCue && (
               <Card className="p-4">
                 <p className="text-xs font-semibold uppercase tracking-wider text-primary-300">Coach says</p>
-                <p className="mt-1 text-sm text-white">{session.currentCue}</p>
+                <p className="mt-1 text-sm text-ink">{session.currentCue}</p>
               </Card>
             )}
           </div>
@@ -219,19 +263,19 @@ const SessionReport: React.FC<{
   return (
     <div className="space-y-5">
       <Card className="p-6 text-center">
-        <p className="text-sm text-gray-400">{exerciseName} session complete</p>
+        <p className="text-sm text-ink-muted">{exerciseName} session complete</p>
         <div className="mt-3 flex justify-center gap-10">
           <div>
-            <p className="font-display text-3xl font-semibold text-white">{reps.length}</p>
-            <p className="text-xs text-gray-500">total reps</p>
+            <p className="font-display text-3xl font-semibold text-ink">{reps.length}</p>
+            <p className="text-xs text-ink-faint">total reps</p>
           </div>
           <div>
             <p className={`font-display text-3xl font-semibold ${avgScore >= 80 ? 'text-success-400' : avgScore >= 60 ? 'text-primary-300' : 'text-secondary-400'}`}>{avgScore || '—'}</p>
-            <p className="text-xs text-gray-500">avg form score</p>
+            <p className="text-xs text-ink-faint">avg form score</p>
           </div>
           <div>
-            <p className="font-display text-3xl font-semibold text-white">{Math.floor(durationSeconds / 60)}:{String(durationSeconds % 60).padStart(2, '0')}</p>
-            <p className="text-xs text-gray-500">duration</p>
+            <p className="font-display text-3xl font-semibold text-ink">{Math.floor(durationSeconds / 60)}:{String(durationSeconds % 60).padStart(2, '0')}</p>
+            <p className="text-xs text-ink-faint">duration</p>
           </div>
         </div>
         {saved && <Badge tone="success" className="mt-4">Saved to Training → History</Badge>}
@@ -239,7 +283,7 @@ const SessionReport: React.FC<{
 
       {reps.length > 0 && (
         <Card className="p-5">
-          <h3 className="text-sm font-semibold text-white">Rep quality</h3>
+          <h3 className="text-sm font-semibold text-ink">Rep quality</h3>
           <div className="mt-4 h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
@@ -263,10 +307,10 @@ const SessionReport: React.FC<{
 
       {cues.length > 0 && (
         <Card className="p-5">
-          <h3 className="text-sm font-semibold text-white">Top improvement suggestions</h3>
+          <h3 className="text-sm font-semibold text-ink">Top improvement suggestions</h3>
           <ul className="mt-3 space-y-2">
             {cues.map((c, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
+              <li key={i} className="flex items-start gap-2 text-sm text-ink-muted">
                 <span className="mt-1.5 block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary-400" />
                 {c}
               </li>

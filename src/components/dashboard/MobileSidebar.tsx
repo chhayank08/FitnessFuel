@@ -24,7 +24,7 @@ const MobileSidebar: React.FC = () => {
 
       <Sheet open={isOpen} onClose={() => setIsOpen(false)}>
         <div className="p-2 pb-4">
-          <p className="px-4 pb-2 pt-3 text-[11px] font-semibold uppercase tracking-widest text-gray-500">More</p>
+          <p className="px-4 pb-2 pt-3 text-[11px] font-semibold uppercase tracking-widest text-ink-faint">More</p>
           <div className="space-y-1">
             {items.map((item) => (
               <NavLink
@@ -33,7 +33,7 @@ const MobileSidebar: React.FC = () => {
                 onClick={() => setIsOpen(false)}
                 className={({ isActive }) =>
                   `flex items-center rounded-xl px-4 py-3 text-sm font-medium transition-colors duration-150 ${
-                    isActive ? 'bg-primary-500/15 text-white' : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                    isActive ? 'bg-primary-500/15 text-ink' : 'text-ink-muted hover:bg-white/5 hover:text-ink'
                   }`
                 }
               >
@@ -48,7 +48,7 @@ const MobileSidebar: React.FC = () => {
                 signOut();
                 setIsOpen(false);
               }}
-              className="flex w-full items-center rounded-xl px-4 py-3 text-sm font-medium text-gray-400 transition-colors duration-150 hover:bg-white/5 hover:text-white"
+              className="flex w-full items-center rounded-xl px-4 py-3 text-sm font-medium text-ink-muted transition-colors duration-150 hover:bg-white/5 hover:text-ink"
             >
               <LogOut size={19} className="mr-3" />
               Sign Out

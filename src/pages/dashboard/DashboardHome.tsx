@@ -1,12 +1,12 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { motion, useReducedMotion, Variants } from 'framer-motion';
 import { Activity, Flame, HeartPulse, Weight, UserCog, Footprints, Moon, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useDailyLogContext } from '../../context/DailyLogContext';
-import { getTodaysPlan, generateWeeklyMealPlan, generateWeeklyExercisePlan } from '../../lib/planGenerator';
+import { generateWeeklyMealPlan, generateWeeklyExercisePlan } from '../../lib/planGenerator';
+import { useTodaysPlan } from '../../hooks/useTodaysPlan';
 import { useHealthMetrics } from '../../hooks/useHealthMetrics';
 import { useWeeklyActivity } from '../../hooks/useWeeklyActivity';
-import { useWorkoutSessions } from '../../hooks/useWorkoutSessions';
 import { useSettings } from '../../hooks/useSettings';
 import { computeHealthScore } from '../../lib/healthScore';
 import { convertWeight } from '../../lib/units';
@@ -24,8 +24,10 @@ import GoalProgressCard from '../../components/dashboard/GoalProgressCard';
 import InsightCard from '../../components/dashboard/InsightCard';
 import WeightTrendChart from '../../components/dashboard/WeightTrendChart';
 import TodaysPlanCard from '../../components/dashboard/TodaysPlanCard';
-import FormCoachCTA from '../../components/dashboard/FormCoachCTA';
+import NextActionCard from '../../components/dashboard/NextActionCard';
+import CoachTipCard from '../../components/dashboard/CoachTipCard';
 import WeekAtAGlanceStrip from '../../components/dashboard/WeekAtAGlanceStrip';
+import { useTour } from '../../components/onboarding/TourContext';
 import { useNavigate } from 'react-router-dom';
 
 const container: Variants = {
@@ -47,14 +49,20 @@ const DashboardHome: React.FC = () => {
   const weightUnit = settings.units.weight;
   const metrics = useHealthMetrics(14);
   const activity = useWeeklyActivity(`${dailyLog.completions.length}`);
-  const { sessions } = useWorkoutSessions();
 
   const { nutritionProfile, targets, bmi, currentWeight, startWeight, weeklyDeltaKg, projectedGoalDate, insightTexts } = insights;
 
-  const todaysPlan = useMemo(
-    () => (nutritionProfile && profile ? getTodaysPlan(profile) : null),
-    [nutritionProfile, profile]
-  );
+  const { plan: todaysPlan } = useTodaysPlan(profile, nutritionProfile != null);
+
+  // First-run product tour: only after the profile wizard is complete.
+  const tour = useTour();
+  const tourStarted = useRef(false);
+  useEffect(() => {
+    if (tourStarted.current || profileLoading || !nutritionProfile || tour.isDone()) return;
+    tourStarted.current = true;
+    const t = setTimeout(() => tour.start(), 600);
+    return () => clearTimeout(t);
+  }, [profileLoading, nutritionProfile, tour]);
 
   const weeklyMealPlan = useMemo(
     () => (nutritionProfile && profile ? generateWeeklyMealPlan(profile) : []),
@@ -79,8 +87,6 @@ const DashboardHome: React.FC = () => {
       }),
     [streak, dailyLog.waterMl, targets, weeklyDeltaKg, nutritionProfile, metrics, activity.workouts7d]
   );
-
-  const lastSession = sessions[0];
 
   const displayName = profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'there';
   const todayLabel = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
@@ -113,8 +119,8 @@ const DashboardHome: React.FC = () => {
       {/* Greeting */}
       <motion.div variants={item} className="mb-7 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-sm text-gray-400">{todayLabel}</p>
-          <h1 className="mt-1 font-display text-3xl font-semibold text-white">
+          <p className="text-sm text-ink-muted">{todayLabel}</p>
+          <h1 className="mt-1 font-display text-3xl font-semibold text-ink">
             Welcome back, <span className="capitalize">{displayName}</span>
           </h1>
         </div>
@@ -122,11 +128,11 @@ const DashboardHome: React.FC = () => {
           {nutritionProfile && (
             <button
               onClick={() => navigate('/dashboard/progress')}
-              className="flex items-center gap-1.5 rounded-full border border-surface-line-strong bg-surface-2 px-3 py-1 text-sm text-gray-300 transition-colors hover:text-white"
+              className="flex items-center gap-1.5 rounded-full border border-surface-line-strong bg-surface-2 px-3 py-1 text-sm text-ink-muted transition-colors hover:text-ink"
             >
               <HeartPulse className="h-3.5 w-3.5 text-primary-300" />
-              Health Score <span className="font-semibold text-white tabular-nums">{healthScore.score}</span>
-              <ChevronRight className="h-3.5 w-3.5 text-gray-500" />
+              Health Score <span className="font-semibold text-ink tabular-nums">{healthScore.score}</span>
+              <ChevronRight className="h-3.5 w-3.5 text-ink-faint" />
             </button>
           )}
           {streak.current > 0 && (
@@ -153,9 +159,14 @@ const DashboardHome: React.FC = () => {
         </motion.div>
       ) : (
         <>
+          {/* What should I do right now */}
+          <motion.div variants={item} className="mb-5">
+            <NextActionCard plan={todaysPlan} />
+          </motion.div>
+
           {/* Right now: rings + water + streak/goal */}
           <div className="mb-5 grid grid-cols-1 gap-5 lg:grid-cols-12">
-            <motion.div variants={item} className="lg:col-span-4">
+            <motion.div variants={item} className="lg:col-span-4" data-tour="calorie-ring">
               <CalorieRing consumed={dailyLog.consumed.calories} target={targets?.dailyCalories ?? 0} className="h-full" />
             </motion.div>
             <div className="flex flex-col gap-5 lg:col-span-4">
@@ -185,7 +196,7 @@ const DashboardHome: React.FC = () => {
 
           {/* Today's plan + this week */}
           <div className="mb-5 grid grid-cols-1 gap-5 lg:grid-cols-12">
-            <motion.div variants={item} className="lg:col-span-7">
+            <motion.div variants={item} className="lg:col-span-7" data-tour="todays-plan">
               <TodaysPlanCard
                 plan={todaysPlan}
                 isCompleted={dailyLog.isCompleted}
@@ -290,11 +301,6 @@ const DashboardHome: React.FC = () => {
             </div>
           )}
 
-          {/* Form Coach CTA */}
-          <motion.div variants={item} className="mb-5">
-            <FormCoachCTA lastSession={lastSession} />
-          </motion.div>
-
           {/* Trend + insights */}
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <motion.div variants={item}>
@@ -304,6 +310,10 @@ const DashboardHome: React.FC = () => {
               <InsightCard texts={insightTexts} className="h-full" />
             </motion.div>
           </div>
+
+          <motion.div variants={item} className="mt-5">
+            <CoachTipCard />
+          </motion.div>
         </>
       )}
     </motion.div>

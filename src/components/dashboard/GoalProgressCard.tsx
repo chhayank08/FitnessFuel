@@ -25,10 +25,10 @@ const GoalProgressCard: React.FC<GoalProgressCardProps> = ({
     return (
       <Card className={`p-5 ${className}`}>
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-white">Goal</h3>
-          <Target className="h-4 w-4 text-gray-500" />
+          <h3 className="text-sm font-semibold text-ink">Goal</h3>
+          <Target className="h-4 w-4 text-ink-faint" />
         </div>
-        <p className="mt-3 text-sm text-gray-400">Set a target weight in your profile to track progress toward it.</p>
+        <p className="mt-3 text-sm text-ink-muted">Set a target weight in your profile to track progress toward it.</p>
       </Card>
     );
   }
@@ -42,24 +42,24 @@ const GoalProgressCard: React.FC<GoalProgressCardProps> = ({
   return (
     <Card className={`p-5 ${className}`}>
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white">Goal</h3>
+        <h3 className="text-sm font-semibold text-ink">Goal</h3>
         <Target className="h-4 w-4 text-primary-300" />
       </div>
 
-      <p className="mt-3 text-sm text-gray-300">
-        <span className="font-display text-lg font-semibold text-white tabular-nums">{convertWeight(remaining, unit).toFixed(1)} {unit}</span> to go
+      <p className="mt-3 text-sm text-ink-muted">
+        <span className="font-display text-lg font-semibold text-ink tabular-nums">{convertWeight(remaining, unit).toFixed(1)} {unit}</span> to go
       </p>
 
       <ProgressBar value={progress} colorClassName="bg-primary-gradient" className="mt-3" />
 
-      <div className="mt-2 flex justify-between text-xs text-gray-500 tabular-nums">
+      <div className="mt-2 flex justify-between text-xs text-ink-faint tabular-nums">
         <span>{formatWeight(startWeight, unit)}</span>
-        <span className="text-gray-300">{formatWeight(currentWeight, unit)}</span>
+        <span className="text-ink-muted">{formatWeight(currentWeight, unit)}</span>
         <span>{formatWeight(targetWeight, unit)}</span>
       </div>
 
       {projectedDate && (
-        <p className="mt-3 text-xs text-gray-400">
+        <p className="mt-3 text-xs text-ink-muted">
           Projected to reach it by{' '}
           <span className="font-medium text-primary-300">
             {projectedDate.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}

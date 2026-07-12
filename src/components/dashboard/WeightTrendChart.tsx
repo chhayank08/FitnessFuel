@@ -23,8 +23,8 @@ const CustomTooltip: React.FC<{ active?: boolean; payload?: { value: number }[];
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-xl border border-surface-line-strong bg-surface-3 px-3 py-2 shadow-card">
-      <p className="text-xs text-gray-400">{label}</p>
-      <p className="text-sm font-semibold text-white tabular-nums">{payload[0].value} kg</p>
+      <p className="text-xs text-ink-muted">{label}</p>
+      <p className="text-sm font-semibold text-ink tabular-nums">{payload[0].value} kg</p>
     </div>
   );
 };
@@ -69,7 +69,7 @@ const WeightTrendChart: React.FC<WeightTrendChartProps> = ({
   return (
     <Card className={`p-5 ${className}`}>
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white">{title}</h3>
+        <h3 className="text-sm font-semibold text-ink">{title}</h3>
         {rangeControl && data.length >= 2 && <Tabs tabs={RANGES.map((r) => ({ id: r.id, label: r.label }))} active={range} onChange={setRange} />}
       </div>
 

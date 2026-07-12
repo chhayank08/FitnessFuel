@@ -90,8 +90,8 @@ const ProgressPage: React.FC = () => {
     <motion.div className="mx-auto max-w-7xl" variants={reducedMotion ? undefined : container} initial="hidden" animate="show">
       <motion.div variants={item} className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl font-semibold text-white">Health</h1>
-          <p className="mt-1 text-sm text-gray-400">Your composite wellness score, vitals, and long-term trends</p>
+          <h1 className="font-display text-3xl font-semibold text-ink">Health</h1>
+          <p className="mt-1 text-sm text-ink-muted">Your composite wellness score, vitals, and long-term trends</p>
         </div>
         <div className="flex items-center gap-2">
           <SegmentedControl options={RANGE_OPTIONS} active={range} onChange={setRange} size="sm" />
@@ -186,7 +186,7 @@ const ProgressPage: React.FC = () => {
       {weightHistory.logs.some((l) => l.notes || l.mood) && (
         <motion.div variants={item} className="mt-5">
           <Card className="p-5">
-            <h3 className="text-sm font-semibold text-white">Notes &amp; mood</h3>
+            <h3 className="text-sm font-semibold text-ink">Notes &amp; mood</h3>
             <div className="mt-3 space-y-3">
               {weightHistory.logs
                 .filter((l) => l.notes || l.mood)
@@ -194,11 +194,11 @@ const ProgressPage: React.FC = () => {
                 .reverse()
                 .map((log) => (
                   <div key={log.id} className="rounded-xl bg-surface-2 p-3">
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-ink-faint">
                       {new Date(log.created_at).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
                     </p>
-                    {log.mood && <p className="mt-1 text-sm text-gray-300">Mood: {log.mood}</p>}
-                    {log.notes && <p className="mt-1 text-sm text-gray-400">{log.notes}</p>}
+                    {log.mood && <p className="mt-1 text-sm text-ink-muted">Mood: {log.mood}</p>}
+                    {log.notes && <p className="mt-1 text-sm text-ink-muted">{log.notes}</p>}
                   </div>
                 ))}
             </div>

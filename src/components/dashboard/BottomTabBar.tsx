@@ -2,15 +2,17 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { PILLAR_ITEMS } from './navItems';
+import { hapticSelection } from '../../lib/haptics';
 
 const BottomTabBar: React.FC = () => (
-  <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-surface-line bg-surface-1/95 pb-safe backdrop-blur-xl md:hidden">
+  <nav data-tour="bottom-nav" className="fixed inset-x-0 bottom-0 z-30 border-t border-surface-line bg-surface-1/95 pb-safe backdrop-blur-xl md:hidden">
     <div className="flex h-16 items-stretch justify-around">
       {PILLAR_ITEMS.map((item) => (
         <NavLink
           key={item.path}
           to={item.path}
           end={item.path === '/dashboard'}
+          onClick={() => hapticSelection()}
           className="relative flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium"
         >
           {({ isActive }) => (
@@ -22,8 +24,8 @@ const BottomTabBar: React.FC = () => (
                   transition={{ type: 'spring', stiffness: 400, damping: 32 }}
                 />
               )}
-              <item.icon size={21} className={isActive ? 'text-primary-300' : 'text-gray-500'} />
-              <span className={isActive ? 'text-white' : 'text-gray-500'}>{item.name}</span>
+              <item.icon size={21} className={isActive ? 'text-primary-300' : 'text-ink-faint'} />
+              <span className={isActive ? 'text-ink' : 'text-ink-faint'}>{item.name}</span>
             </>
           )}
         </NavLink>

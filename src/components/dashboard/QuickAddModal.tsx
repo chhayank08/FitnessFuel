@@ -1,15 +1,9 @@
 import React, { useState } from 'react';
 import { Scale, GlassWater, UtensilsCrossed } from 'lucide-react';
-import { Haptics, NotificationType } from '@capacitor/haptics';
-import { Capacitor } from '@capacitor/core';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import { useDailyLogContext, QuickAddTab } from '../../context/DailyLogContext';
-
-function hapticSuccess() {
-  if (!Capacitor.isNativePlatform()) return;
-  Haptics.notification({ type: NotificationType.Success }).catch(() => {});
-}
+import { hapticSuccess } from '../../lib/haptics';
 
 const TABS: { id: QuickAddTab; label: string; icon: React.ElementType }[] = [
   { id: 'weight', label: 'Weight', icon: Scale },
@@ -18,7 +12,7 @@ const TABS: { id: QuickAddTab; label: string; icon: React.ElementType }[] = [
 ];
 
 const inputClass =
-  'w-full rounded-xl border border-surface-line-strong bg-surface-2 px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500';
+  'w-full rounded-xl border border-surface-line-strong bg-surface-2 px-3.5 py-2.5 text-sm text-ink placeholder-ink-faint focus:outline-none focus:ring-2 focus:ring-primary-500';
 
 const QuickAddModal: React.FC = () => {
   const { quickAdd, dailyLog, weightHistory } = useDailyLogContext();
@@ -80,7 +74,7 @@ const QuickAddModal: React.FC = () => {
   return (
     <Modal open={quickAdd.open} onClose={close} panelClassName="max-w-md">
       <div className="p-5">
-        <h2 className="font-display text-lg font-semibold text-white">Quick log</h2>
+        <h2 className="font-display text-lg font-semibold text-ink">Quick log</h2>
 
         <div className="mt-4 flex rounded-xl bg-surface-2 p-1">
           {TABS.map((t) => (
@@ -88,7 +82,7 @@ const QuickAddModal: React.FC = () => {
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium transition-colors ${
-                tab === t.id ? 'bg-primary-500/20 text-white' : 'text-gray-400 hover:text-white'
+                tab === t.id ? 'bg-primary-500/20 text-ink' : 'text-ink-muted hover:text-ink'
               }`}
             >
               <t.icon className="h-4 w-4" />
@@ -100,7 +94,7 @@ const QuickAddModal: React.FC = () => {
         <div className="mt-5 space-y-3">
           {tab === 'weight' && (
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-gray-400">Weight (kg)</label>
+              <label className="mb-1.5 block text-xs font-medium text-ink-muted">Weight (kg)</label>
               <input
                 type="number"
                 inputMode="decimal"
@@ -117,7 +111,7 @@ const QuickAddModal: React.FC = () => {
 
           {tab === 'water' && (
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-gray-400">Amount (ml)</label>
+              <label className="mb-1.5 block text-xs font-medium text-ink-muted">Amount (ml)</label>
               <input
                 type="number"
                 inputMode="numeric"
@@ -145,7 +139,7 @@ const QuickAddModal: React.FC = () => {
           {tab === 'meal' && (
             <>
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-gray-400">Meal name</label>
+                <label className="mb-1.5 block text-xs font-medium text-ink-muted">Meal name</label>
                 <input
                   value={mealName}
                   onChange={(e) => setMealName(e.target.value)}
@@ -156,19 +150,19 @@ const QuickAddModal: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-gray-400">Calories</label>
+                  <label className="mb-1.5 block text-xs font-medium text-ink-muted">Calories</label>
                   <input type="number" inputMode="numeric" min="1" value={mealCalories} onChange={(e) => setMealCalories(e.target.value)} placeholder="550" className={inputClass} />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-gray-400">Protein (g)</label>
+                  <label className="mb-1.5 block text-xs font-medium text-ink-muted">Protein (g)</label>
                   <input type="number" inputMode="numeric" min="0" value={mealProtein} onChange={(e) => setMealProtein(e.target.value)} placeholder="35" className={inputClass} />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-gray-400">Carbs (g)</label>
+                  <label className="mb-1.5 block text-xs font-medium text-ink-muted">Carbs (g)</label>
                   <input type="number" inputMode="numeric" min="0" value={mealCarbs} onChange={(e) => setMealCarbs(e.target.value)} placeholder="60" className={inputClass} />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-gray-400">Fat (g)</label>
+                  <label className="mb-1.5 block text-xs font-medium text-ink-muted">Fat (g)</label>
                   <input type="number" inputMode="numeric" min="0" value={mealFat} onChange={(e) => setMealFat(e.target.value)} placeholder="18" className={inputClass} />
                 </div>
               </div>

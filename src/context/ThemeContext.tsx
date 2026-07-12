@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 
@@ -19,7 +19,15 @@ function getInitialTheme(): ThemeMode {
   return 'dark';
 }
 
-export function useTheme() {
+interface ThemeContextValue {
+  theme: ThemeMode;
+  setTheme: (mode: ThemeMode) => void;
+  toggleTheme: () => void;
+}
+
+const ThemeContext = createContext<ThemeContextValue | null>(null);
+
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<ThemeMode>(getInitialTheme);
 
   useEffect(() => {
@@ -32,8 +40,18 @@ export function useTheme() {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  }, [theme, setTheme]);
+    setThemeState((current) => {
+      const next = current === 'dark' ? 'light' : 'dark';
+      localStorage.setItem(STORAGE_KEY, next);
+      return next;
+    });
+  }, []);
 
-  return { theme, setTheme, toggleTheme };
+  return <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>{children}</ThemeContext.Provider>;
+};
+
+export function useThemeContext() {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error('useThemeContext must be used within ThemeProvider');
+  return ctx;
 }

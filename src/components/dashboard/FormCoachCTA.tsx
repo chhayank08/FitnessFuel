@@ -22,10 +22,10 @@ const FormCoachCTA: React.FC<FormCoachCTAProps> = ({ lastSession, className = ''
           <ScanFace className="h-5 w-5" />
         </div>
         <div>
-          <p className="text-sm font-medium text-white">
+          <p className="text-sm font-medium text-ink">
             {lastSession ? `Last session: ${lastSession.exercise_key.replace(/-/g, ' ')}` : 'Try the Form Coach'}
           </p>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-ink-muted">
             {lastSession
               ? `${lastSession.total_reps} reps · form score ${lastSession.avg_form_score != null ? Math.round(lastSession.avg_form_score) : '—'}`
               : 'Live rep counting and form feedback using your webcam'}
@@ -33,7 +33,7 @@ const FormCoachCTA: React.FC<FormCoachCTAProps> = ({ lastSession, className = ''
         </div>
       </div>
       <button
-        onClick={() => navigate('/dashboard/exercise/coach')}
+        onClick={() => navigate('/dashboard/exercise/coach?autostart=1')}
         className="flex items-center gap-1 text-sm font-medium text-primary-300 hover:text-primary-200"
       >
         {lastSession ? 'New session' : 'Get started'}

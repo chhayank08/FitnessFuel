@@ -40,12 +40,12 @@ const MetricStatCard: React.FC<MetricStatCardProps> = ({
     }
   >
     {value != null ? (
-      <p className="mt-2 font-display text-2xl font-semibold text-white">
+      <p className="mt-2 font-display text-2xl font-semibold text-ink">
         <AnimatedNumber value={value} format={format} />
-        {unit && <span className="ml-1 text-sm font-normal text-gray-400">{unit}</span>}
+        {unit && <span className="ml-1 text-sm font-normal text-ink-muted">{unit}</span>}
       </p>
     ) : (
-      <p className="mt-2 text-sm text-gray-500">{emptyLabel}</p>
+      <p className="mt-2 text-sm text-ink-faint">{emptyLabel}</p>
     )}
   </BaseStatCard>
 );

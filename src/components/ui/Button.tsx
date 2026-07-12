@@ -2,7 +2,7 @@ import React from 'react';
 import { Loader2 } from 'lucide-react';
 
 type Variant = 'primary' | 'ghost' | 'subtle' | 'danger';
-type Size = 'sm' | 'md';
+type Size = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
@@ -24,6 +24,7 @@ const VARIANTS: Record<Variant, string> = {
 const SIZES: Record<Size, string> = {
   sm: 'px-3 py-1.5 text-sm rounded-lg gap-1.5',
   md: 'px-4 py-2.5 text-sm rounded-xl gap-2',
+  lg: 'px-6 py-3.5 text-base rounded-2xl gap-2',
 };
 
 const Button: React.FC<ButtonProps> = ({
